@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ms_warranty_policy,ms.warranty.policy,model_ms_warranty_policy,base.group_user,1,1,1,1
+
+access_ms_warranty_coverage_term,ms.warranty.coverage.term,model_ms_warranty_coverage_term,base.group_user,1,1,1,1
+
+access_ms_warranty_exclusion,ms.warranty.exclusion,model_ms_warranty_exclusion,base.group_user,1,1,1,1

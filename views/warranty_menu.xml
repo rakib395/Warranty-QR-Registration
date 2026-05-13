@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Root Menu -->
+    <menuitem id="ms_warranty_root_menu"
+              name="Warranty Management"
+              sequence="10"
+              web_icon="ms_warranty_qr_claim_portal,static/description/icon.png"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="ms_warranty_config_menu"
+              name="Configuration"
+              parent="ms_warranty_root_menu"
+              sequence="100"/>
+
+    <!-- Warranty Policy Menu -->
+    <menuitem id="ms_warranty_policy_menu"
+              name="Warranty Policies"
+              parent="ms_warranty_config_menu"
+              action="action_ms_warranty_policy"
+              sequence="10"/>
+</odoo>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_ms_warranty_policy_tree" model="ir.ui.view">
+        <field name="name">ms.warranty.policy.list</field>
+        <field name="model">ms.warranty.policy</field>
+        <field name="arch" type="xml">
+            <list string="Warranty Policies">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="warranty_duration_value"/>
+                <field name="warranty_duration_unit"/>
+                <field name="warranty_start_basis"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_ms_warranty_policy_form" model="ir.ui.view">
+        <field name="name">ms.warranty.policy.form</field>
+        <field name="model">ms.warranty.policy</field>
+        <field name="arch" type="xml">
+            <form string="Warranty Policy">
+                <sheet>
+                    <!-- Smart Buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_registrations" type="object" class="oe_stat_button" icon="fa-id-card">
+                            <field name="registration_count" widget="statinfo" string="Registrations"/>
+                        </button>
+                        <button name="action_view_claims" type="object" class="oe_stat_button" icon="fa-wrench">
+                            <field name="claim_count" widget="statinfo" string="Claims"/>
+                        </button>
+                    </div>
+
+                    <!-- Archive Ribbon -->
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+
+                    <div class="oe_title">
+                        <label for="name" string="Policy Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Standard 2 Years Warranty"/>
+                        </h1>
+                        <label for="code" string="Policy Code"/>
+                        <h3>
+                            <field name="code" placeholder="e.g. POL-STD-2Y"/>
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group string="Duration &amp; Basis">
+                            <label for="warranty_duration_value" string="Duration"/>
+                            <div class="o_row">
+                                <field name="warranty_duration_value" class="oe_inline"/>
+                                <field name="warranty_duration_unit" class="oe_inline"/>
+                            </div>
+                            <field name="warranty_start_basis"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        
+                        <group string="Claim &amp; Registration Rules">
+                            <field name="max_claim_count"/>
+                            <field name="registration_required"/>
+                            <field name="auto_approve_registration" invisible="not registration_required"/>
+                            <field name="registration_deadline_days" invisible="not registration_required"/>
+                            <field name="allow_late_registration" invisible="not registration_required"/>
+                        </group>
+                    </group>
+
+                    <group string="Validation Requirements">
+                        <group>
+                            <field name="serial_required"/>
+                            <field name="invoice_required"/>
+                        </group>
+                        <group>
+                            <field name="dealer_required"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Coverage Terms" name="coverage">
+                            <field name="coverage_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Exclusions" name="exclusion">
+                            <field name="exclusion_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Policy Summary" name="summary">
+                            <group>
+                                <field name="description" placeholder="Customer facing policy details..."/>
+                                <field name="internal_note" placeholder="Internal instructions..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_ms_warranty_policy" model="ir.actions.act_window">
+        <field name="name">Warranty Policies</field>
+        <field name="res_model">ms.warranty.policy</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first warranty policy.
+            </p>
+            <p>
+                Define rules, duration, and coverage terms for your warranty services.
+            </p>
+        </field>
+    </record>
+
+</odoo>
