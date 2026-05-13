@@ -1,0 +1,35 @@
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Odoo specific
+*.log
+*.conf
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Databases (if any local sqlite/dump files)
+*.db
+*.sqlite
+*.sql
+
+# Backups
+*~
+*.bak
