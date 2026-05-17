@@ -1,6 +1,7 @@
 from odoo import http, _
 from odoo.http import request
 import base64
+from datetime import date
 
 class WarrantyPublic(http.Controller):
 
@@ -32,13 +33,38 @@ class WarrantyPublic(http.Controller):
                 ('state', '=', 'approved')
             ], limit=1)
             
+
+            if not registration:
+                registration = request.env['ms.warranty.registration'].sudo().search([
+                    ('serial_no', '=', qr_token.serial_no)
+                ], order='create_date desc', limit=1)
+            
             public_user = request.env.ref('base.public_user')
-            if registration and registration.create_uid != public_user:
+            if registration and registration.state == 'approved' and registration.create_uid != public_user:
                 is_dealer_registered = True
+
+
+        live_status = 'not_found'
+        if qr_token.state == 'new':
+            live_status = 'not_found'
+        elif registration:
+            if registration.state in ['draft', 'pending']:
+                live_status = 'pending'
+            elif registration.state == 'rejected':
+                live_status = 'rejected'
+            elif registration.state == 'approved':
+
+                if registration.expiry_date and registration.expiry_date < date.today():
+                    live_status = 'expired'
+                else:
+                    live_status = 'approved'
+            elif registration.state == 'expired':
+                live_status = 'expired'
 
         products = request.env['product.template'].sudo().search([('sale_ok', '=', True)])
         dealers = request.env['res.partner'].sudo().search([('is_company', '=', True)])
         
+
         return request.render("ms_warranty_qr_claim_portal.public_registration_template", {
             'products': products,
             'dealers': dealers,
@@ -51,6 +77,7 @@ class WarrantyPublic(http.Controller):
             'product_name': qr_token.product_id.name if qr_token.product_id else False,
             'policy_name': registration.policy_id.name if registration and registration.policy_id else "Standard Warranty",
             'expiry_date': registration.expiry_date if registration else False,
+            'live_status': live_status, 
         })
 
         

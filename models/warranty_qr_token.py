@@ -2,6 +2,7 @@ import uuid
 import qrcode
 import base64
 from io import BytesIO
+from datetime import date
 from odoo import models, fields, api, _
 
 class WarrantyQRToken(models.Model):
@@ -36,6 +37,42 @@ class WarrantyQRToken(models.Model):
     
     active = fields.Boolean(default=True)
     use_count = fields.Integer(string='Scan Count', default=0)
+
+    # US-004
+    live_warranty_status = fields.Selection([
+        ('not_found', 'Not Registered'),
+        ('pending', 'Pending Approval'),
+        ('approved', 'Active / Valid'),
+        ('expired', 'Expired'),
+        ('rejected', 'Rejected')
+    ], string='Live Warranty Status', compute='_compute_live_warranty_status')
+
+    @api.depends('state', 'serial_no', 'registration_id', 'registration_id.state', 'registration_id.expiry_date')
+    def _compute_live_warranty_status(self):
+        today = date.today()
+        for record in self:
+            if record.state == 'new' or not record.serial_no:
+                record.live_warranty_status = 'not_found'
+                continue
+
+            reg = record.registration_id
+            if not reg:
+                reg = self.env['ms.warranty.registration'].sudo().search([
+                    ('serial_no', '=', record.serial_no)
+                ], limit=1)
+
+            if not reg:
+                record.live_warranty_status = 'not_found'
+            elif reg.state == 'draft' or reg.state == 'pending':
+                record.live_warranty_status = 'pending'
+            elif reg.state == 'rejected':
+                record.live_warranty_status = 'rejected'
+            elif reg.state == 'expired' or (reg.expiry_date and reg.expiry_date < today):
+                record.live_warranty_status = 'expired'
+            elif reg.state == 'approved':
+                record.live_warranty_status = 'approved'
+            else:
+                record.live_warranty_status = 'not_found'
 
     # US-002: Generate secure URL using token instead of internal ID
     @api.depends('token', 'purpose')
