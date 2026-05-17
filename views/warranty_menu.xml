@@ -32,4 +32,12 @@
               parent="ms_warranty_config_menu" 
               action="action_warranty_qr_token" 
               sequence="20"/>
+
+    <!-- Claim Submit Menu -->
+    <menuitem id="menu_ms_warranty_claim"
+              name="Warranty Claims"
+              action="action_ms_warranty_claim"
+              parent="ms_warranty_root_menu" 
+              sequence="30"/>
+
 </odoo>

@@ -9,3 +9,9 @@ access_ms_warranty_exclusion,ms.warranty.exclusion,model_ms_warranty_exclusion,b
 access_ms_warranty_registration,ms.warranty.registration,model_ms_warranty_registration,base.group_user,1,1,1,1
 
 access_ms_warranty_qr_token,ms.warranty.qr.token,model_ms_warranty_qr_token,base.group_user,1,1,1,1
+
+access_ms_warranty_registration_public,ms.warranty.registration public,model_ms_warranty_registration,base.group_public,1,1,1,0
+access_ms_warranty_registration_portal,ms.warranty.registration portal,model_ms_warranty_registration,base.group_portal,1,1,1,0
+
+access_ms_warranty_claim_user,ms.warranty.claim user,model_ms_warranty_claim,base.group_user,1,1,1,1
+access_ms_warranty_claim_public,ms.warranty.claim public,model_ms_warranty_claim,base.group_public,1,1,1,0

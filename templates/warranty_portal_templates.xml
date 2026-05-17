@@ -9,21 +9,49 @@
                             
                             <t t-if="error == 'already_registered' or token_state == 'used'">
                                 <div class="text-center py-4">
-                                    <div class="mb-4">
-                                        <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
-                                    </div>
                                     
-                                    <t t-if="is_dealer_registered">
-                                        <h2 class="fw-bold text-success mb-3" style="font-size: 32px;">Warranty Already Confirmed.</h2>
+                                    <t t-if="claim_success">
+                                        <div class="alert alert-success text-center shadow-sm rounded-3 mb-4 p-4" role="alert">
+                                            <h4 class="fw-bold"><i class="fa fa-paper-plane me-2"/>Claim Submitted Successfully!</h4>
+                                            <p class="mb-0 mt-2" style="font-size: 15px;">
+                                                Your claim request has been logged under Tracking Number: <strong><t t-out="claim_num"/></strong>. Our service agents will evaluate and get in touch shortly.
+                                            </p>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
+                                        </div>
+                                        <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Thank You!</h2>
                                         <p class="text-muted mx-auto" style="max-width: 530px; font-size: 16px; line-height: 1.6;">
-                                            This product's warranty has already been securely registered and confirmed by the dealer/warehouse. You do not need to resubmit the registration form.
+                                            We have received your technical fault report. You can track your request using the claim number above.
                                         </p>
                                     </t>
+
                                     <t t-else="">
-                                        <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Already Registered Warranty</h2>
-                                        <p class="text-muted mx-auto" style="max-width: 500px; font-size: 16px; line-height: 1.6;">
-                                            This warranty link or QR code has already been utilized to register a product. You cannot submit multiple registrations using the same token.
-                                        </p>
+                                        <div t-if="error == 'claim_failed'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
+                                            <i class="fa fa-exclamation-triangle mr-2"/> Failed to submit your claim request. Please try again.
+                                        </div>
+                                        
+                                        <div t-if="error == 'not_eligible'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                            <i class="fa fa-info-circle mr-2"/> This product's warranty is no longer eligible for claiming online.
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
+                                        </div>
+                                        
+                                        <t t-if="is_dealer_registered">
+                                            <h2 class="fw-bold text-success mb-3" style="font-size: 32px;">Warranty Already Confirmed.</h2>
+                                            <p class="text-muted mx-auto" style="max-width: 530px; font-size: 16px; line-height: 1.6;">
+                                                This product's warranty has already been securely registered and confirmed by the dealer/warehouse. You do not need to resubmit the registration form.
+                                            </p>
+                                        </t>
+                                        <t t-else="">
+                                            <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Already Registered Warranty</h2>
+                                            <p class="text-muted mx-auto" style="max-width: 500px; font-size: 16px; line-height: 1.6;">
+                                                This warranty link or QR code has already been utilized to register a product. You cannot submit multiple registrations using the same token.
+                                            </p>
+                                        </t>
                                     </t>
 
                                     <div class="row justify-content-center mt-4">
@@ -70,6 +98,59 @@
                                             </t>
                                         </div>
                                     </div>
+
+                                    <t t-if="live_status == 'approved'">
+                                        <div class="row justify-content-center mt-5">
+                                            <div class="col-md-10 text-start border p-4 rounded-3 shadow-sm bg-white">
+                                                <h4 class="fw-bold mb-4 text-primary pb-2 border-bottom">
+                                                    <i class="fa fa-wrench me-2"/>Submit an Online Warranty Claim
+                                                </h4>
+                                                
+                                                <form action="/warranty/claim/submit" method="post" enctype="multipart/form-data">
+                                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                    <input type="hidden" name="current_token" t-att-value="current_token"/>
+                                                    <input type="hidden" name="serial_no" t-att-value="token_serial_no"/>
+                                                    
+                                                    <div class="form-group mb-3">
+                                                        <label class="fw-bold text-muted small uppercase mb-1" for="issue_category">Issue Category</label>
+                                                        <select name="issue_category" class="form-select bg-light border-0" required="1" style="height: 45px;">
+                                                            <option value="hardware">Hardware Failure</option>
+                                                            <option value="software">Software / Firmware Issue</option>
+                                                            <option value="damage">Physical Damage (Check Policy Extension)</option>
+                                                            <option value="other">Other Technical Faults</option>
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="form-group mb-3">
+                                                        <label class="fw-bold text-muted small uppercase mb-1" for="preferred_contact">Preferred Contact (Phone or Email)</label>
+                                                        <input type="text" class="form-control bg-light border-0" name="preferred_contact" placeholder="e.g. +88017xxxxxxxx / customer@email.com" required="1" style="height: 45px;"/>
+                                                    </div>
+
+                                                    <div class="form-group mb-3">
+                                                        <label class="fw-bold text-muted small uppercase mb-1" for="description">Detailed Issue Description</label>
+                                                        <textarea class="form-control bg-light border-0" name="description" rows="4" placeholder="Please type a complete overview of the technical faults or device breakdown..." required="1"/>
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="form-group col-md-6 mb-4">
+                                                            <label class="fw-bold text-muted small uppercase mb-1" for="product_photo">Upload Product/Fault Photo</label>
+                                                            <input type="file" class="form-control bg-light border-0" name="product_photo" accept="image/*" required="1"/>
+                                                        </div>
+                                                        <div class="form-group col-md-6 mb-4">
+                                                            <label class="fw-bold text-muted small uppercase mb-1" for="invoice_proof">Upload Purchase Invoice Proof</label>
+                                                            <input type="file" class="form-control bg-light border-0" name="invoice_proof" accept="image/*,application/pdf"/>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="text-end">
+                                                        <button type="submit" class="btn btn-danger w-100 py-3 fw-bold rounded-3 shadow-sm" style="font-size: 16px;">
+                                                            <i class="fa fa-paper-plane me-2"/>Submit Claim Request
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </t>
 
                                     <div class="mt-5">
                                         <a href="/" class="btn btn-outline-primary btn-lg rounded-pill px-5" style="font-size: 15px; font-weight: 600;">

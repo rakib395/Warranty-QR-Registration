@@ -77,7 +77,9 @@ class WarrantyPublic(http.Controller):
             'product_name': qr_token.product_id.name if qr_token.product_id else False,
             'policy_name': registration.policy_id.name if registration and registration.policy_id else "Standard Warranty",
             'expiry_date': registration.expiry_date if registration else False,
-            'live_status': live_status, 
+            'live_status': live_status,
+            'claim_success': post.get('claim_success'),
+            'claim_num': post.get('claim_num'), 
         })
 
         
@@ -142,3 +144,49 @@ class WarrantyPublic(http.Controller):
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
 
         return request.render("ms_warranty_qr_claim_portal.registration_success_page")
+    
+
+    @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True)
+    def submit_warranty_claim(self, **post):
+        token_str = post.get('current_token')
+        serial_no = post.get('serial_no')
+        
+        if not token_str or not serial_no:
+            return request.redirect('/')
+        
+        registration = request.env['ms.warranty.registration'].sudo().search([
+            ('serial_no', '=', serial_no),
+            ('state', '=', 'approved')
+        ], limit=1)
+
+        if not registration or (registration.expiry_date and registration.expiry_date < date.today()):
+            return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
+
+
+        photo_file = post.get('product_photo')
+        photo_data = False
+        if photo_file:
+            photo_data = base64.b64encode(photo_file.read())
+
+        invoice_file = post.get('invoice_proof')
+        invoice_data = False
+        if invoice_file:
+            invoice_data = base64.b64encode(invoice_file.read())
+
+
+        vals = {
+            'registration_id': registration.id,
+            'issue_category': post.get('issue_category', 'hardware'),
+            'description': post.get('description'),
+            'preferred_contact': post.get('preferred_contact'),
+            'product_photo': photo_data,
+            'invoice_proof': invoice_data,
+            'state': 'submitted',
+        }
+
+        try:
+            claim = request.env['ms.warranty.claim'].sudo().create(vals)
+            return request.redirect(f'/warranty/registration?token={token_str}&claim_success=1&claim_num={claim.name}')
+        except Exception as e:
+            print("=== WARRANTY CLAIM SUBMISSION ERROR ===", str(e))
+            return request.redirect(f'/warranty/registration?token={token_str}&error=claim_failed')
