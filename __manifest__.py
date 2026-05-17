@@ -26,7 +26,7 @@
         # 'security/record_rules.xml',
         
         # Data
-        # 'data/sequence.xml',
+         'data/sequence.xml',
         # 'data/mail_activity_type.xml',
         # 'data/mail_template.xml',
         # 'data/warranty_claim_stage_data.xml',
@@ -36,8 +36,9 @@
         
         # Views
          'views/warranty_policy_views.xml',
+         'views/warranty_registration_views.xml',
+         'views/warranty_qr_token_views.xml',
          'views/warranty_menu.xml',
-        # 'views/warranty_registration_views.xml',
         # 'views/warranty_claim_views.xml',
         # 'views/warranty_service_center_views.xml',
         # 'views/warranty_dashboard_views.xml',
@@ -47,7 +48,7 @@
         
         # Templates
         # 'templates/warranty_public_templates.xml',
-        # 'templates/warranty_portal_templates.xml',
+         'templates/warranty_portal_templates.xml',
         # 'templates/warranty_email_templates.xml',
         
         # Reports

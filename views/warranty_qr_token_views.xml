@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_warranty_qr_token_tree" model="ir.ui.view">
+        <field name="name">ms.warranty.qr.token.tree</field>
+        <field name="model">ms.warranty.qr.token</field>
+        <field name="arch" type="xml">
+            <list string="QR Tokens">
+                <field name="name"/>
+                <field name="purpose"/>
+                <field name="state"/>
+                <field name="use_count"/>
+                <field name="url" widget="url"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_warranty_qr_token_form" model="ir.ui.view">
+        <field name="name">ms.warranty.qr.token.form</field>
+        <field name="model">ms.warranty.qr.token</field>
+        <field name="arch" type="xml">
+            <form string="QR Token">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="purpose"/>
+                            <field name="product_id"/>
+                            <field name="serial_no"/>
+                        </group>
+                        <group>
+                            <field name="token" readonly="1"/>
+                            <field name="state"/>
+                            <field name="qr_code_image" widget="image" class="oe_avatar"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="url" widget="url" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_qr_token" model="ir.actions.act_window">
+        <field name="name">Warranty QR Tokens</field>
+        <field name="res_model">ms.warranty.qr.token</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+</odoo>

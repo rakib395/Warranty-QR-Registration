@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="public_registration_template" name="Warranty Registration Form">
+        <t t-call="website.layout">
+            <div id="wrap">
+                <div class="container mt-5 mb-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8 card shadow p-5 border-0 rounded-3">
+                            
+                            <t t-if="error == 'already_registered' or token_state == 'used'">
+                                <div class="text-center py-4">
+                                    <div class="mb-4">
+                                        <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
+                                    </div>
+                                    
+                                    <t t-if="is_dealer_registered">
+                                        <h2 class="fw-bold text-success mb-3" style="font-size: 32px;">Warranty Already Confirmed.</h2>
+                                        <p class="text-muted mx-auto" style="max-width: 530px; font-size: 16px; line-height: 1.6;">
+                                            This product's warranty has already been securely registered and confirmed by the dealer/warehouse. You do not need to resubmit the registration form.
+                                        </p>
+                                    </t>
+                                    <t t-else="">
+                                        <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Already Registered Warranty</h2>
+                                        <p class="text-muted mx-auto" style="max-width: 500px; font-size: 16px; line-height: 1.6;">
+                                            This warranty link or QR code has already been utilized to register a product. You cannot submit multiple registrations using the same token.
+                                        </p>
+                                    </t>
+
+                                    <div class="row justify-content-center mt-4">
+                                        <div class="col-md-10 text-start bg-light p-4 rounded-3 shadow-sm" style="border-left: 5px solid #28a745;">
+                                            <h5 class="fw-bold text-dark mb-3"><i class="fa fa-shield me-2 text-success"/>Active Coverage Details:</h5>
+                                            
+                                            <div class="row mb-2">
+                                                <div class="col-sm-5 fw-bold text-muted">Product Name:</div>
+                                                <div class="col-sm-7 text-dark fw-semibold"><t t-out="product_name"/></div>
+                                            </div>
+                                        
+                                            
+                                            <div class="row mb-2">
+                                                <div class="col-sm-5 fw-bold text-muted">Warranty Policy:</div>
+                                                <div class="col-sm-7 text-success fw-bold"><t t-out="policy_name"/></div>
+                                            </div>
+                                            
+                                            <t t-if="expiry_date">
+                                                <div class="row">
+                                                    <div class="col-sm-5 fw-bold text-muted">Valid Until (Expiry):</div>
+                                                    <div class="col-sm-7 text-danger fw-bold"><t t-out="expiry_date"/></div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-5">
+                                        <a href="/" class="btn btn-outline-primary btn-lg rounded-pill px-5" style="font-size: 15px; font-weight: 600;">
+                                            <i class="fa fa-home me-2"/> Back to Home
+                                        </a>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <t t-else="">
+                                <h2 class="text-center mb-4 fw-bold text-secondary">Product Warranty Registration</h2>
+
+                                <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
+                                    <i class="fa fa-exclamation-triangle mr-2"/> Serial number already registered in our system! Please verify your serial number.
+                                </div>
+                                
+                                <div t-if="error == 'invalid_data'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                    <i class="fa fa-info-circle mr-2"/> Submission failed. Please ensure all data is correct.
+                                </div>
+
+                                <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="current_token" t-att-value="current_token"/>
+                                    
+                                    <div class="row">
+                                        <div class="form-group col-12 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="customer_name">Full Name</label>
+                                            <input type="text" class="form-control form-control-lg bg-light border-0" name="customer_name" required="1"/>
+                                        </div>
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="customer_phone">Phone Number</label>
+                                            <input type="tel" class="form-control form-control-lg bg-light border-0" name="customer_phone" required="1"/>
+                                        </div>
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="customer_email">Email Address</label>
+                                            <input type="email" class="form-control form-control-lg bg-light border-0" name="customer_email" required="1"/>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="product_id">Product</label>
+                                            <select name="product_id" class="form-select form-control-lg bg-light border-0" required="1">
+                                                <t t-foreach="products" t-as="product">
+                                                    <option t-att-value="product.id" t-att-selected="product.id == token_product_id">
+                                                        <t t-esc="product.name"/>
+                                                    </option>
+                                                </t>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="serial_no">Serial Number</label>
+                                            <input type="text" class="form-control form-control-lg bg-light border-0" name="serial_no" 
+                                                   t-att-value="token_serial_no" 
+                                                   placeholder="Enter Product Serial Number" required="1"/>
+                                            <small class="text-muted d-block mt-1" style="font-size: 11px;">Please input the actual serial number printed on the product.</small>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="purchase_date">Purchase Date</label>
+                                            <input type="date" class="form-control form-control-lg bg-light border-0" name="purchase_date" required="1"/>
+                                        </div>
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="dealer_id">Dealer/Store</label>
+                                            <select name="dealer_id" class="form-select form-control-lg bg-light border-0">
+                                                <t t-foreach="dealers" t-as="dealer">
+                                                    <option t-att-value="dealer.id"><t t-esc="dealer.name"/></option>
+                                                </t>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group col-12 mb-4">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="invoice_proof">Upload Invoice/Photo</label>
+                                            <input type="file" class="form-control form-control-lg bg-light border-0" name="invoice_proof" accept="image/*,application/pdf" required="1"/>
+                                        </div>
+
+                                        <div class="form-group col-12 text-center mt-3">
+                                            <button type="submit" class="btn btn-primary btn-lg rounded-3 px-5 py-3 fw-bold shadow-sm" style="font-size: 16px;">
+                                                Submit Registration
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </t>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="registration_success_page" name="Success">
+        <t t-call="website.layout">
+            <div class="container mt-5 mb-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6 card shadow p-5 text-center border-0 rounded-3">
+                        <div class="mb-4">
+                            <i class="fa fa-check-circle text-success" style="font-size: 80px;"/>
+                        </div>
+                        <h2 class="text-success mb-3 fw-bold">Registration Successful!</h2>
+                        <p class="lead text-muted" style="font-size: 16px;">
+                            Thank you! Your warranty registration request has been received. We will verify your information and update you soon.
+                        </p>
+                        <hr class="my-4 opacity-25"/>
+                        <a href="/" class="btn btn-primary btn-lg rounded-pill px-5" style="font-size: 15px; font-weight: 600;">Back to Home Page</a>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

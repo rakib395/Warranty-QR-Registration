@@ -6,16 +6,30 @@
               sequence="10"
               web_icon="ms_warranty_qr_claim_portal,static/description/icon.png"/>
 
+    <!-- Registration Menu (US-003) -->
+    <menuitem id="ms_warranty_registration_menu" 
+              name="Registrations" 
+              parent="ms_warranty_root_menu" 
+              action="action_ms_warranty_registration" 
+              sequence="20"/>
+
     <!-- Configuration Menu -->
     <menuitem id="ms_warranty_config_menu"
               name="Configuration"
               parent="ms_warranty_root_menu"
               sequence="100"/>
 
-    <!-- Warranty Policy Menu -->
+    <!-- Warranty Policy Menu (US-001) -->
     <menuitem id="ms_warranty_policy_menu"
               name="Warranty Policies"
               parent="ms_warranty_config_menu"
               action="action_ms_warranty_policy"
               sequence="10"/>
+
+    <!-- QR Token Menu -->
+    <menuitem id="ms_warranty_qr_token_menu" 
+              name="QR Tokens" 
+              parent="ms_warranty_config_menu" 
+              action="action_warranty_qr_token" 
+              sequence="20"/>
 </odoo>
