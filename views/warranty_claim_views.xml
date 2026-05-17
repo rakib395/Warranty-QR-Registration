@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_warranty_claim_reject_wizard_form" model="ir.ui.view">
+        <field name="name">warranty.claim.reject.wizard.form</field>
+        <field name="model">warranty.claim.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Warranty Claim">
+                <group>
+                    <field name="rejection_reason" placeholder="Please enter the mandatory rejection reason here..."/>
+                </group>
+                <footer>
+                    <button string="Confirm Reject" name="action_reject_claim" type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_claim_reject_wizard" model="ir.actions.act_window">
+        <field name="name">Reject Claim Reason</field>
+        <field name="res_model">warranty.claim.reject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <record id="view_ms_warranty_claim_list" model="ir.ui.view">
         <field name="name">ms.warranty.claim.list</field>
         <field name="model">ms.warranty.claim</field>
@@ -27,9 +50,14 @@
         <field name="arch" type="xml">
             <form string="Warranty Claim">
                 <header>
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="submitted,under_review,approved,resolved"/>
+                    <button name="action_under_review" string="Mark Under Review" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                    <button name="action_approve" string="Approve Claim" type="object" class="oe_highlight btn-success" invisible="state != 'under_review'"/>
+                    <button name="%(action_warranty_claim_reject_wizard)d" string="Reject Claim" type="action" class="btn-danger" invisible="state != 'under_review'"/>
+                    <button name="action_resolved" string="Mark Resolved" type="object" class="oe_highlight btn-info" invisible="state != 'approved'"/>
+                    
+                    <button name="action_reset_to_review" string="Reset to Review" type="object" class="btn-secondary" invisible="state not in ('approved', 'rejected', 'resolved')"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="submitted,under_review,approved,resolved"/>
                 </header>
 
                 <sheet>
@@ -76,6 +104,7 @@
                     </notebook>
 
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

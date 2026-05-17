@@ -1,17 +1,12 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-
 access_ms_warranty_policy,ms.warranty.policy,model_ms_warranty_policy,base.group_user,1,1,1,1
-
 access_ms_warranty_coverage_term,ms.warranty.coverage.term,model_ms_warranty_coverage_term,base.group_user,1,1,1,1
-
 access_ms_warranty_exclusion,ms.warranty.exclusion,model_ms_warranty_exclusion,base.group_user,1,1,1,1
-
 access_ms_warranty_registration,ms.warranty.registration,model_ms_warranty_registration,base.group_user,1,1,1,1
-
 access_ms_warranty_qr_token,ms.warranty.qr.token,model_ms_warranty_qr_token,base.group_user,1,1,1,1
-
-access_ms_warranty_registration_public,ms.warranty.registration public,model_ms_warranty_registration,base.group_public,1,1,1,0
-access_ms_warranty_registration_portal,ms.warranty.registration portal,model_ms_warranty_registration,base.group_portal,1,1,1,0
-
-access_ms_warranty_claim_user,ms.warranty.claim user,model_ms_warranty_claim,base.group_user,1,1,1,1
-access_ms_warranty_claim_public,ms.warranty.claim public,model_ms_warranty_claim,base.group_public,1,1,1,0
+access_ms_warranty_registration_public,ms.warranty.registration.public,model_ms_warranty_registration,base.group_public,1,1,1,0
+access_ms_warranty_registration_portal,ms.warranty.registration.portal,model_ms_warranty_registration,base.group_portal,1,1,1,0
+access_ms_warranty_claim_user,ms.warranty.claim.user,model_ms_warranty_claim,base.group_user,1,1,1,1
+access_ms_warranty_claim_public,ms.warranty.claim.public,model_ms_warranty_claim,base.group_public,1,1,1,0
+access_ms_warranty_claim_portal,ms.warranty.claim.portal,model_ms_warranty_claim,base.group_portal,1,1,1,0
+access_warranty_claim_reject_wizard,warranty.claim.reject.wizard,model_warranty_claim_reject_wizard,base.group_user,1,1,1,1
