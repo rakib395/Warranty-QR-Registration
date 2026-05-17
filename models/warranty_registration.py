@@ -33,10 +33,10 @@ class WarrantyRegistration(models.Model):
         ('pending', 'Pending Approval'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
-        ('expired', 'Expired')
+        ('expired', 'Expired/Voided') 
     ], string='Status', default='draft', tracking=True)
 
-    #  Duplicate Serial Validation
+    # Duplicate Serial Validation
     @api.constrains('serial_no', 'product_id')
     def _check_duplicate_registration(self):
         for record in self:
@@ -49,10 +49,11 @@ class WarrantyRegistration(models.Model):
             if self.search_count(domain) > 0:
                 raise ValidationError(_("This Serial Number is already registered for this product!"))
 
-    
     @api.depends('purchase_date', 'policy_id')
     def _compute_expiry_date(self):
         for record in self:
+            if record.id and not record.policy_id:
+                continue
             if record.purchase_date and record.policy_id:
                 duration = record.policy_id.warranty_duration_value
                 unit = record.policy_id.warranty_duration_unit
@@ -65,7 +66,6 @@ class WarrantyRegistration(models.Model):
             else:
                 record.expiry_date = False
 
-    # US-003: Auto-Approve logic from US-001 Policy
     def action_submit(self):
         self.write({'state': 'pending'})
 
@@ -84,7 +84,6 @@ class WarrantyRegistration(models.Model):
                         'use_count': token_record.use_count + 1
                     })
 
-                    
     def action_draft(self):
         self.write({'state': 'draft'})
 
@@ -94,7 +93,6 @@ class WarrantyRegistration(models.Model):
     def action_expire(self):
         self.write({'state': 'expired'})
         
-
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

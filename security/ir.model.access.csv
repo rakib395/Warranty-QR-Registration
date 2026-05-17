@@ -10,3 +10,7 @@ access_ms_warranty_claim_user,ms.warranty.claim.user,model_ms_warranty_claim,bas
 access_ms_warranty_claim_public,ms.warranty.claim.public,model_ms_warranty_claim,base.group_public,1,1,1,0
 access_ms_warranty_claim_portal,ms.warranty.claim.portal,model_ms_warranty_claim,base.group_portal,1,1,1,0
 access_warranty_claim_reject_wizard,warranty.claim.reject.wizard,model_warranty_claim_reject_wizard,base.group_user,1,1,1,1
+access_warranty_claim_assign_wizard,warranty.claim.assign.wizard,model_warranty_claim_assign_wizard,base.group_user,1,1,1,1
+access_ms_warranty_service_center,ms.warranty.service.center,model_ms_warranty_service_center,base.group_user,1,1,1,1
+access_ms_warranty_claim_part_line,ms.warranty.claim.part.line,model_ms_warranty_claim_part_line,base.group_user,1,1,1,1
+access_ms_warranty_claim_labor_line,ms.warranty.claim.labor.line,model_ms_warranty_claim_labor_line,base.group_user,1,1,1,1

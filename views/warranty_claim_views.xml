@@ -24,6 +24,32 @@
         <field name="target">new</field>
     </record>
 
+    <record id="view_warranty_claim_assign_wizard_form" model="ir.ui.view">
+        <field name="name">warranty.claim.assign.wizard.form</field>
+        <field name="model">warranty.claim.assign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Warranty Claim to Service Center">
+                <group>
+                    <group>
+                        <field name="service_center_id" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="technician_id" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Assign &amp; Set SLA" name="action_assign_claim" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_claim_assign_wizard" model="ir.actions.act_window">
+        <field name="name">Assign Claim</field>
+        <field name="res_model">warranty.claim.assign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <record id="view_ms_warranty_claim_list" model="ir.ui.view">
         <field name="name">ms.warranty.claim.list</field>
         <field name="model">ms.warranty.claim</field>
@@ -32,6 +58,7 @@
                 <field name="name"/>
                 <field name="registration_id"/>
                 <field name="issue_category"/>
+                <field name="resolution_type" widget="badge"/>
                 <field name="preferred_contact"/>
                 <field name="create_date" string="Submitted On"/>
                 <field name="state"
@@ -51,17 +78,25 @@
             <form string="Warranty Claim">
                 <header>
                     <button name="action_under_review" string="Mark Under Review" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                    
+                    <button name="%(action_warranty_claim_assign_wizard)d" string="Assign to Center" type="action" class="oe_highlight btn-info" invisible="state != 'under_review'"/>
+
                     <button name="action_approve" string="Approve Claim" type="object" class="oe_highlight btn-success" invisible="state != 'under_review'"/>
                     <button name="%(action_warranty_claim_reject_wizard)d" string="Reject Claim" type="action" class="btn-danger" invisible="state != 'under_review'"/>
-                    <button name="action_resolved" string="Mark Resolved" type="object" class="oe_highlight btn-info" invisible="state != 'approved'"/>
                     
+                    <button name="action_mark_as_repaired" string="Mark as Repaired" type="object" class="oe_highlight btn-primary" invisible="state != 'approved' or resolution_type != 'repair'"/>
+                    
+                    <button name="action_approve_replacement" string="Approve Replacement" type="object" class="oe_highlight btn-success" invisible="state != 'approved' or resolution_type != 'replacement'"/>
+                    
+                    <button name="action_approve_refund" string="Approve &amp; Create Refund" type="object" class="oe_highlight btn-warning" invisible="state != 'approved' or resolution_type != 'refund'"/>
+                    
+                    <button name="action_resolved" string="Mark Resolved" type="object" class="oe_highlight btn-info" invisible="state != 'approved'"/>
                     <button name="action_reset_to_review" string="Reset to Review" type="object" class="btn-secondary" invisible="state not in ('approved', 'rejected', 'resolved')"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="submitted,under_review,approved,resolved"/>
                 </header>
 
                 <sheet>
-
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
@@ -69,40 +104,84 @@
                     </div>
 
                     <group>
-                        <group>
-                            <field name="registration_id"/>
-                            <field name="issue_category"/>
-                            <field name="preferred_contact"/>
+                        <group string="Claim Information">
+                            <field name="registration_id" readonly="state == 'resolved'"/>
+                            <field name="issue_category" readonly="state == 'resolved'"/>
+                            <field name="preferred_contact" readonly="state == 'resolved'"/>
+                            <field name="resolution_type" widget="radio" options="{'horizontal': true}" readonly="state == 'resolved'"/>
                         </group>
 
-                        <group>
-                            <field name="create_date" readonly="1"/>
+                        <group string="Assignment &amp; Deadlines">
+                            <field name="create_date" readonly="1" string="Submitted On"/>
+                            <field name="service_center_id" readonly="1" invisible="not service_center_id"/>
+                            <field name="technician_id" readonly="1" invisible="not technician_id"/>
+                            <field name="sla_deadline" readonly="1" invisible="not sla_deadline"/>
                         </group>
                     </group>
 
                     <notebook>
-
                         <page string="Fault Description">
-                            <field name="description"
-                                   placeholder="Customer issue description..."/>
+                            <field name="description" placeholder="Customer issue description..." readonly="state == 'resolved'"/>
+                        </page>
+
+                        <page string="Resolution Management" invisible="state in ('submitted', 'under_review', 'rejected')">
+                            <div invisible="resolution_type != 'repair'">
+                                <group>
+                                    <field name="diagnosis" placeholder="Describe the found hardware/software fault..." required="state == 'approved' and resolution_type == 'repair'" readonly="state == 'resolved'"/>
+                                    <field name="repair_notes" placeholder="Describe the actions taken to fix the product..." required="state == 'approved' and resolution_type == 'repair'" readonly="state == 'resolved'"/>
+                                </group>
+                                
+                                <separator string="Parts Replacement Breakdown"/>
+                                <field name="part_lines" readonly="state == 'resolved'">
+                                    <list editable="bottom">
+                                        <field name="product_id" options="{'no_create': True}"/>
+                                        <field name="quantity"/>
+                                        <field name="price_unit"/>
+                                        <field name="warranty_covered" widget="boolean_toggle"/>
+                                        <field name="subtotal" sum="Total Parts Cost"/>
+                                    </list>
+                                </field>
+
+                                <separator string="Labor &amp; Service Charges"/>
+                                <field name="labor_lines" readonly="state == 'resolved'">
+                                    <list editable="bottom">
+                                        <field name="description" placeholder="e.g., Motherboard Soldering"/>
+                                        <field name="hours"/>
+                                        <field name="hourly_rate"/>
+                                        <field name="warranty_covered" widget="boolean_toggle"/>
+                                        <field name="subtotal" sum="Total Labor Cost"/>
+                                    </list>
+                                </field>
+                            </div>
+
+                            <div invisible="resolution_type != 'replacement'">
+                                <group string="Product Replacement Mapping">
+                                    <field name="old_serial_no" readonly="1" force_save="1"/>
+                                    <field name="replacement_product_id" options="{'no_create': True}" required="state == 'approved' and resolution_type == 'replacement'" readonly="state == 'resolved'"/>
+                                    <field name="replacement_serial_no" placeholder="Enter new item serial barcode..." required="state == 'approved' and resolution_type == 'replacement'" readonly="state == 'resolved'"/>
+                                </group>
+                                <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                                    <strong>Warranty Carry-Forward Policy Applied:</strong> 
+                                    Approving this action will automatically expire the old serial configuration and transfer the remaining warranty duration to the newly provisioned serial number.
+                                </div>
+                            </div>
+
+                            <div invisible="resolution_type != 'refund'">
+                                <group string="Finance Liquidation Details">
+                                    <field name="refund_amount" placeholder="0.00" required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
+                                    <field name="refund_reason" placeholder="State reason why repair/replacement isn't feasible (e.g., Out of Stock)..." required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
+                                </group>
+                                
+                            </div>
                         </page>
 
                         <page string="Attachments / Proofs">
-
                             <group>
-                                <field name="product_photo"
-                                       widget="image"
-                                       class="oe_avatar"
-                                       options="{'size': [200, 200]}"/>
-
-                                <field name="invoice_proof"
-                                       widget="binary"/>
+                                <field name="product_photo" widget="image" class="oe_avatar" options="{'size': [200, 200]}" readonly="state == 'resolved'"/>
+                                <field name="invoice_proof" widget="binary" readonly="state == 'resolved'"/>
                             </group>
-
                         </page>
-
                     </notebook>
-
                 </sheet>
                 <chatter/>
             </form>
@@ -113,12 +192,10 @@
         <field name="name">Warranty Claims</field>
         <field name="res_model">ms.warranty.claim</field>
         <field name="view_mode">list,form</field>
-
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No warranty claims found!
             </p>
-
             <p>
                 Claims submitted from the public portal will appear here.
             </p>
