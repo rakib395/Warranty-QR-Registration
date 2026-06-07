@@ -11,6 +11,8 @@ class WarrantyClaim(models.Model):
 
     name = fields.Char(string='Claim Number', required=True, copy=False, readonly=True, index=True, default=lambda self: _('New'))
     registration_id = fields.Many2one('ms.warranty.registration', string='Warranty Registration', required=True, ondelete='cascade')
+
+    policy_id = fields.Many2one('ms.warranty.policy', string='Warranty Policy', related='registration_id.policy_id', store=True, index=True)
     
     issue_category = fields.Selection([
         ('hardware', 'Hardware Failure'),
@@ -56,6 +58,88 @@ class WarrantyClaim(models.Model):
 
     refund_amount = fields.Float(string='Refund Amount', tracking=True)
     refund_reason = fields.Text(string='Refund Reason Description')
+
+    is_chargeable = fields.Boolean(string='Is Chargeable Service', default=False, tracking=True)
+    charge_reason = fields.Text(string='Charge Reason', tracking=True)
+    estimated_charge_amount = fields.Float(string='Estimated Amount', tracking=True)
+
+    is_suspect_duplicate = fields.Boolean(string='Suspect Duplicate Claim', compute='_compute_fraud_analysis', store=True)
+    fraud_risk_level = fields.Selection([
+        ('low', 'Low Risk'),
+        ('medium', 'Medium Risk'),
+        ('high', 'High Risk/Suspicious')
+    ], string='Fraud Risk Level', compute='_compute_fraud_analysis', store=True, default='low', tracking=True)
+    fraud_warning_notes = fields.Text(string='Fraud System Detection Logs', compute='_compute_fraud_analysis', store=True)
+
+    
+    dealer_id = fields.Many2one('res.partner', string='Dealer/Store', related='registration_id.dealer_id', store=True, index=True)
+    product_id = fields.Many2one('product.product', string='Product', related='registration_id.product_id', store=True, index=True)
+    total_claim_cost = fields.Float(string='Total Claim Cost', compute='_compute_total_claim_cost', store=True, tracking=True)
+
+    @api.depends('part_lines.subtotal', 'labor_lines.subtotal', 'refund_amount', 'resolution_type')
+    def _compute_total_claim_cost(self):
+        for claim in self:
+            cost = 0.0
+            if claim.resolution_type == 'repair':
+                parts_cost = sum(claim.part_lines.mapped('subtotal'))
+                labor_cost = sum(claim.labor_lines.mapped('subtotal'))
+                cost = parts_cost + labor_cost
+            elif claim.resolution_type == 'refund':
+                cost = claim.refund_amount
+            elif claim.resolution_type == 'replacement':
+                cost = claim.replacement_product_id.standard_price if claim.replacement_product_id else 0.0
+            
+            claim.total_claim_cost = cost
+
+    @api.depends('registration_id', 'create_date', 'registration_id.purchase_date', 'registration_id.serial_no')
+    def _compute_fraud_analysis(self):
+        for claim in self:
+            is_duplicate = False
+            risk_level = 'low'
+            warning_reasons = []
+
+            if not claim.registration_id:
+                claim.is_suspect_duplicate = False
+                claim.fraud_risk_level = 'low'
+                claim.fraud_warning_notes = False
+                continue
+
+            duplicate_claims_domain = [
+                ('registration_id.serial_no', '=', claim.registration_id.serial_no),
+                ('id', '!=', claim._origin.id if claim._origin else claim.id)
+            ]
+            existing_claims = self.env['ms.warranty.claim'].search(duplicate_claims_domain)
+            
+            open_or_resolved_claims = existing_claims.filtered(lambda c: c.state in ('under_review', 'approved', 'resolved'))
+            if open_or_resolved_claims:
+                is_duplicate = True
+                risk_level = 'high'
+                claim_names = ", ".join(open_or_resolved_claims.mapped('name'))
+                warning_reasons.append(_("⚠️ DUPLICATE DETECTED: Active or resolved claim(s) [%s] already exist for this serial number.") % claim_names)
+
+            current_date = claim.create_date.date() if claim.create_date else fields.Date.today()
+            date_threshold = current_date - timedelta(days=30)
+            
+            recent_claims = existing_claims.filtered(
+                lambda c: c.create_date and c.create_date.date() >= date_threshold and c.state != 'rejected'
+            )
+            if recent_claims:
+                is_duplicate = True
+                if risk_level != 'high':
+                    risk_level = 'medium'
+                warning_reasons.append(_("FREQUENCY WARNING: Multiple claims (%s items) filed within the last 30 days for this resource.") % len(recent_claims))
+
+            reg = claim.registration_id
+            if reg.purchase_date and reg.create_date:
+                reg_creation_days = (reg.create_date.date() - reg.purchase_date).days
+                if reg_creation_days < 0 or reg_creation_days > 365:
+                    is_duplicate = True
+                    risk_level = 'high'
+                    warning_reasons.append(_(" MISMATCH: High variance between stated Purchase Invoice Date and system Registration Record Date."))
+
+            claim.is_suspect_duplicate = is_duplicate
+            claim.fraud_risk_level = risk_level
+            claim.fraud_warning_notes = "\n".join(warning_reasons) if warning_reasons else False
 
     @api.depends('registration_id')
     def _compute_old_serial_no(self):
@@ -224,7 +308,6 @@ class WarrantyClaim(models.Model):
             credit_note = self.env['account.move'].create(credit_note_vals)
             chatter_msg = _("Automated Account Bridge: Draft Credit Note %s has been created for finance approval.") % credit_note.name
         except Exception:
-
             chatter_msg = _("Account Bridge Log: Registered for refund queue. Finance approval required.")
 
         old_reg.write({'state': 'expired'})
@@ -240,3 +323,69 @@ class WarrantyClaim(models.Model):
         ) % (self.refund_amount, self.refund_reason)
         
         self.message_post(body=log_body, subtype_xmlid="mail.mt_comment")
+
+
+    def action_convert_to_chargeable(self):
+        """Convert out-of-warranty/invalid claim to chargeable and auto-generate a Draft Quotation"""
+        self.ensure_one()
+        if self.estimated_charge_amount <= 0:
+            raise UserError(_("Please provide a valid Estimated Charge Amount greater than 0."))
+        if not self.charge_reason:
+            raise UserError(_("Charge Reason description is mandatory for paid service conversion."))
+
+        self.write({'is_chargeable': True})
+
+        partner_id = self.registration_id.dealer_id.id if self.registration_id.dealer_id else self.env.user.partner_id.id
+        
+        quotation_vals = {
+            'partner_id': partner_id,
+            'state': 'draft',
+            'origin': self.name,
+            'client_order_ref': _('Chargeable Service: %s') % self.name,
+            'order_line': [(0, 0, {
+                'name': _('Paid Service Charges for Claim %s - Reason: %s') % (self.name, self.charge_reason),
+                'product_id': self.registration_id.product_id.id,
+                'product_uom_qty': 1.0,
+                'price_unit': self.estimated_charge_amount,
+            })],
+        }
+
+        try:
+            quotation = self.env['sale.order'].create(quotation_vals)
+            chatter_msg = _("Sales Bridge: Draft Quotation <b>%s</b> has been generated for this chargeable service.") % quotation.name
+        except Exception:
+            chatter_msg = _("Sales Bridge Log: Service recorded as Chargeable. Awaiting manual Quotation generation.")
+
+        self.message_post(
+            body=_("Claim status updated: Marked as <b>Chargeable Paid Service</b>.<br/>" + chatter_msg),
+            subtype_xmlid="mail.mt_comment"
+        )
+
+    @api.model
+    def _cron_check_sla_breach(self):
+        today = fields.Date.today()
+        breached_claims = self.search([
+            ('state', 'not in', ['resolved', 'rejected']),
+            ('sla_deadline', '<', today)
+        ])
+        
+        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
+        
+        for claim in breached_claims:
+            existing_activity = self.env['mail.activity'].search([
+                ('res_model', '=', 'ms.warranty.claim'),
+                ('res_id', '=', claim.id),
+                ('summary', '=', _("⚠️ SLA Deadline Breached!"))
+            ], limit=1)
+            
+            if not existing_activity:
+                assign_user_id = claim.technician_id.id if claim.technician_id else claim.create_uid.id
+                
+                claim.activity_schedule(
+                    activity_type_id=activity_type.id if activity_type else False,
+                    date_deadline=today,
+                    summary=_("⚠️ SLA Deadline Breached!"),
+                    note=_("The claim %s has breached its SLA deadline (%s). Please review immediately.") % (claim.name, claim.sla_deadline),
+                    user_id=assign_user_id
+                )
+                claim.message_post(body=_("System Alert: This claim has breached its SLA deadline without being resolved or rejected."))

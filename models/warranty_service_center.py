@@ -20,7 +20,6 @@ class WarrantyServiceCenter(models.Model):
     ]
 
     def name_get(self):
-        """Custom display name inside Many2one drop-downs (e.g., [DHK01] Dhaka Central Center)"""
         result = []
         for center in self:
             name = f"[{center.code}] {center.name}" if center.code else center.name

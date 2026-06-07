@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- List View -->
     <record id="view_ms_warranty_registration_tree" model="ir.ui.view">
         <field name="name">ms.warranty.registration.list</field>
         <field name="model">ms.warranty.registration</field>
@@ -16,7 +15,6 @@
         </field>
     </record>
 
-    <!-- Form View -->
     <record id="view_ms_warranty_registration_form" model="ir.ui.view">
         <field name="name">ms.warranty.registration.form</field>
         <field name="model">ms.warranty.registration</field>
@@ -28,6 +26,12 @@
 
                     <button name="action_approve" string="Approve" type="object" 
                             class="oe_highlight" invisible="state != 'pending'"/>
+                    
+                    <button name="%(action_warranty_extend_wizard)d" string="Extend Warranty" type="action" 
+                            class="oe_highlight" invisible="state != 'approved'"/>
+                    
+                    <button name="%(action_warranty_transfer_wizard)d" string="Transfer Ownership" type="action" 
+                            class="oe_highlight" invisible="state != 'approved'"/>
                     
                     <button name="action_reject" string="Reject" type="object" 
                             invisible="state != 'pending'"/>
@@ -43,8 +47,9 @@
                 
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name"/></h1>
+                        <h1><field name="name" readonly="1"/></h1>
                     </div>
+
                     <group>
                         <group string="Customer Information">
                             <field name="customer_name"/>
@@ -52,15 +57,17 @@
                             <field name="customer_email"/>
                         </group>
                         <group string="Product Information">
-                            <field name="product_id"/>
-                            <field name="serial_no"/>
+                            <field name="product_id" readonly="1" force_save="1"/>
+                            <field name="serial_no" readonly="1" force_save="1"/>
                             <field name="policy_id"/>
                         </group>
                     </group>
+
                     <group>
                         <group string="Purchase Details">
                             <field name="purchase_date"/>
                             <field name="dealer_id"/>
+                            <field name="invoice_name" invisible="1"/>
                             <field name="invoice_proof" filename="invoice_name"/>
                         </group>
                         <group string="Warranty Dates">
@@ -68,17 +75,44 @@
                             <field name="expiry_date" readonly="1"/>
                         </group>
                     </group>
+
+                    <notebook>
+                        <page string="Ownership Transfer History">
+                            <group string="Previous Owner Information">
+                                <field name="previous_owner_name" readonly="1"/>
+                                <field name="previous_owner_phone" readonly="1"/>
+                                <field name="previous_owner_email" readonly="1"/>
+                            </group>
+
+                            <group string="Latest Transfer Details">
+                                <field name="last_transfer_date" readonly="1"/>
+                                <field name="last_transfer_note" readonly="1"/>
+                                <field name="ownership_transfer_count" readonly="1"/>
+                            </group>
+
+                        </page>
+                        <page string="Extension History" name="warranty_action_logs">
+                            <field name="event_log_ids" readonly="1">
+                                <list string="Audit logs">
+                                    <field name="create_date" string="Action Date"/>
+                                    <field name="user_id" string="Authorized User"/>
+                                    <field name="event_type" string="Event"/>
+                                    <field name="old_expiry_date" string="Previous Expiry"/>
+                                    <field name="new_expiry_date" string="Extended Expiry"/>
+                                    <field name="reason" string="Justification/Reason"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
                 <chatter/>
             </form>
         </field>
     </record>
 
-    <!-- Action -->
     <record id="action_ms_warranty_registration" model="ir.actions.act_window">
         <field name="name">Warranty Registrations</field>
         <field name="res_model">ms.warranty.registration</field>
         <field name="view_mode">list,form</field>
     </record>
-
 </odoo>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_warranty_certificate" model="ir.actions.report">
+        <field name="name">Warranty Certificate</field>
+        <field name="model">ms.warranty.registration</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">ms_warranty_qr_claim_portal.report_warranty_certificate_template</field>
+        <field name="report_file">ms_warranty_qr_claim_portal.report_warranty_certificate_template</field>
+        <field name="print_report_name">'Warranty_Certificate_%s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_ms_warranty_registration"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_warranty_certificate_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.internal_layout">
+                    <style>
+                        .certificate-container {
+                            border: 6px double #1a252f;
+                            padding: 40px 50px;
+                            background-color: #ffffff;
+                            border-radius: 4px;
+                            color: #2c3e50;
+                            box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
+                        }
+                        .cert-title-main {
+                            font-family: 'Georgia', serif;
+                            font-size: 32px;
+                            font-weight: bold;
+                            letter-spacing: 3px;
+                            color: #1a252f;
+                            margin-bottom: 5px;
+                        }
+                        .cert-subtitle {
+                            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                            font-size: 14px;
+                            font-weight: 600;
+                            letter-spacing: 2px;
+                            color: #e74c3c;
+                        }
+                        .cert-body-text {
+                            font-size: 15px;
+                            line-height: 1.6;
+                            color: #7f8c8d;
+                            margin: 25px 0;
+                        }
+                        .cert-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 30px 0;
+                            border: 1px solid #dcdde1;
+                        }
+                        .cert-table th, .cert-table td {
+                            padding: 14px 20px !important; 
+                            text-align: left;
+                            vertical-align: middle;
+                            border-bottom: 1px solid #f1f2f6;
+                            font-size: 14px;
+                        }
+                        .cert-label {
+                            font-weight: 700;
+                            color: #34495e;
+                            background-color: #f8f9fa;
+                            width: 32%;
+                            letter-spacing: 0.5px;
+                        }
+                        .cert-value {
+                            color: #2c3e50;
+                        }
+                        .cert-highlight-row {
+                            background-color: #fafff9;
+                            border-top: 2px solid #27ae60;
+                            border-bottom: 2px solid #27ae60;
+                        }
+                        .cert-badge-expired {
+                            background-color: #fce4e4;
+                            color: #c0392b;
+                            padding: 4px 10px;
+                            border-radius: 3px;
+                            font-size: 11px;
+                            font-weight: bold;
+                        }
+                        .transfer-alert-box {
+                            background-color: #ebf5fb;
+                            border-left: 4px solid #3498db;
+                            padding: 15px 20px !important;
+                            border-radius: 4px;
+                            font-size: 13px;
+                            color: #2c3e50;
+                            line-height: 1.5;
+                        }
+                        .footer-note {
+                            font-size: 11px;
+                            color: #95a5a6;
+                            line-height: 1.6;
+                            margin-top: 50px;
+                        }
+                        .signature-line {
+                            border-top: 1px dashed #bdc3c7;
+                            width: 200px;
+                            margin: 0 0 5px auto;
+                        }
+                    </style>
+
+                    <div class="page">
+                        <div class="certificate-container">
+                            
+                            <div class="text-center">
+                                <div class="cert-title-main">MINDSYNTH TECHNOLOGIES</div>
+                                <div class="cert-subtitle">OFFICIAL WARRANTY CERTIFICATE</div>
+                                <div style="margin: 15px auto; width: 120px; border-top: 2px solid #e74c3c;"></div>
+                            </div>
+
+                            <div class="text-center">
+                                <p class="cert-body-text">
+                                   This document confirms that the product deployment below is covered by a valid structural and functional warranty.
+
+                                </p>
+                            </div>
+
+                            <table class="cert-table">
+                                <tbody>
+                                    <tr>
+                                        <td class="cert-label">Registration Number</td>
+                                        <td class="cert-value" style="font-weight: bold; color: #1a252f;"><t t-esc="o.name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Customer Name</td>
+                                        <td class="cert-value"><t t-esc="o.customer_name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Contact Details</td>
+                                        <td class="cert-value">
+                                            <span style="margin-right: 15px;"><t t-esc="o.customer_phone"/></span>
+                                            <t t-if="o.customer_email">
+                                                <span style="color: #7f8c8d;">|</span> <span style="margin-left: 15px;"><t t-esc="o.customer_email"/></span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Product / Model</td>
+                                        <td class="cert-value"><t t-esc="o.product_id.display_name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Serial Number (S/N)</td>
+                                        <td class="cert-value" style="font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 15px; letter-spacing: 0.5px;">
+                                            <t t-esc="o.serial_no"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Dealer / Authorized Store</td>
+                                        <td class="cert-value"><t t-esc="o.dealer_id.name if o.dealer_id else 'Direct Store'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Purchase Date</td>
+                                        <td class="cert-value"><t t-esc="o.purchase_date" t-options='{"widget": "date"}'/></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="cert-label">Coverage Policy</td>
+                                        <td class="cert-value"><t t-esc="o.policy_id.name if o.policy_id else 'Standard Protection Plan'"/></td>
+                                    </tr>
+                                    <tr class="cert-highlight-row">
+                                        <td class="cert-label" style="background-color: #f1f9f2; color: #27ae60; font-weight: bold;">Warranty Expiry Date</td>
+                                        <td class="cert-value" style="font-weight: bold; color: #27ae60; font-size: 15px;">
+                                            <t t-esc="o.expiry_date" t-options='{"widget": "date"}'/>
+                                            <t t-if="o.state == 'expired'">
+                                                <span class="cert-badge-expired style=margin-left: 10px;">VOID / EXPIRED</span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <t t-if="o.ownership_transfer_count &gt; 0">
+                                <div class="transfer-alert-box my-4">
+                                    <strong style="color: #2980b9;">Ownership Transfer Record:</strong><br/>
+                                    This certificate has been transferred <strong><t t-esc="o.ownership_transfer_count"/></strong> time(s). 
+                                    Last transfer execution date: <t t-esc="o.last_transfer_date" t-options='{"widget": "date"}'/>.<br/>
+                                    <t t-if="o.previous_owner_name">
+                                        <span style="font-size: 12px; color: #515a5a;">Previous Registered Owner: <t t-esc="o.previous_owner_name"/></span>
+                                    </t>
+                                </div>
+                            </t>
+
+
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

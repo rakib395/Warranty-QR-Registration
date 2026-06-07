@@ -25,26 +25,30 @@
         'security/ir.model.access.csv',
         # 'security/record_rules.xml',
         
-        # Data
-         'data/sequence.xml',
+        'data/sequence.xml',
         # 'data/mail_activity_type.xml',
         # 'data/mail_template.xml',
         # 'data/warranty_claim_stage_data.xml',
         # 'data/warranty_issue_type_data.xml',
         # 'data/warranty_resolution_data.xml',
-        # 'data/ir_cron.xml',
+        'data/ir_cron.xml',
+
+        # Wizards 
+        'wizard/warranty_extend_wizard_view.xml',
+        'wizard/warranty_transfer_wizard_view.xml',
         
         # Views
-         'views/warranty_policy_views.xml',
-         'views/warranty_registration_views.xml',
-         'views/warranty_qr_token_views.xml',
-         'views/warranty_claim_views.xml',
-         'views/warranty_menu.xml',
+        'views/warranty_policy_views.xml',
+        'views/warranty_registration_views.xml',
+        'views/warranty_qr_token_views.xml',
+        'views/warranty_claim_views.xml',
+        'views/warranty_menu.xml',
         # 'views/warranty_service_center_views.xml',
         # 'views/warranty_dashboard_views.xml',
-         'views/product_template_views.xml',
+        'views/product_template_views.xml',
         # 'views/res_partner_views.xml',
         # 'views/res_config_settings_views.xml',
+
         
         # Templates
         # 'templates/warranty_public_templates.xml',
@@ -52,8 +56,8 @@
         # 'templates/warranty_email_templates.xml',
         
         # Reports
-        # 'reports/warranty_certificate_report.xml',
-        # 'reports/warranty_card_report.xml',
+        'reports/warranty_certificate_report.xml',
+        'reports/warranty_card_report.xml',
         # 'reports/warranty_claim_report.xml',
         # 'reports/warranty_label_report.xml',
     ],

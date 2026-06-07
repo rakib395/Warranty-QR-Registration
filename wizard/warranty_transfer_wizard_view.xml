@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_warranty_transfer_wizard_form" model="ir.ui.view">
+        <field name="name">warranty.transfer.wizard.form</field>
+        <field name="model">warranty.transfer.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Transfer Ownership">
+                <group>
+                    <group string="New Owner Details">
+                        <field name="new_customer_name"/>
+                        <field name="new_customer_phone"/>
+                        <field name="new_customer_email"/>
+                    </group>
+                    <group string="Transfer Log">
+                        <field name="transfer_date"/>
+                        <field name="transfer_note" placeholder="Write reason for ownership transfer..."/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_transfer" string="Confirm Transfer" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_transfer_wizard" model="ir.actions.act_window">
+        <field name="name">Transfer Ownership</field>
+        <field name="res_model">warranty.transfer.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -59,6 +59,7 @@
                 <field name="registration_id"/>
                 <field name="issue_category"/>
                 <field name="resolution_type" widget="badge"/>
+                <field name="fraud_risk_level" widget="badge" decoration-danger="fraud_risk_level == 'high'" decoration-warning="fraud_risk_level == 'medium'" decoration-success="fraud_risk_level == 'low'"/>
                 <field name="preferred_contact"/>
                 <field name="create_date" string="Submitted On"/>
                 <field name="state"
@@ -84,6 +85,8 @@
                     <button name="action_approve" string="Approve Claim" type="object" class="oe_highlight btn-success" invisible="state != 'under_review'"/>
                     <button name="%(action_warranty_claim_reject_wizard)d" string="Reject Claim" type="action" class="btn-danger" invisible="state != 'under_review'"/>
                     
+                    <button name="action_convert_to_chargeable" string="Convert to Chargeable" type="object" class="oe_highlight btn-dark" invisible="state not in ('under_review', 'approved') or is_chargeable == True"/>
+
                     <button name="action_mark_as_repaired" string="Mark as Repaired" type="object" class="oe_highlight btn-primary" invisible="state != 'approved' or resolution_type != 'repair'"/>
                     
                     <button name="action_approve_replacement" string="Approve Replacement" type="object" class="oe_highlight btn-success" invisible="state != 'approved' or resolution_type != 'replacement'"/>
@@ -97,9 +100,14 @@
                 </header>
 
                 <sheet>
+
                     <div class="oe_title">
                         <h1>
                             <field name="name" readonly="1"/>
+                            <span class="badge rounded-pill bg-danger" style="font-size: 14px; margin-left: 10px;" invisible="not is_chargeable">Chargeable Paid Service</span>
+                            
+                            <span class="badge rounded-pill bg-warning text-dark" style="font-size: 14px; margin-left: 5px;" invisible="not is_suspect_duplicate or fraud_risk_level != 'medium'">Medium Fraud Risk</span>
+                            <span class="badge rounded-pill bg-danger" style="font-size: 14px; margin-left: 5px;" invisible="not is_suspect_duplicate or fraud_risk_level != 'high'">High Fraud Risk</span>
                         </h1>
                     </div>
 
@@ -109,6 +117,7 @@
                             <field name="issue_category" readonly="state == 'resolved'"/>
                             <field name="preferred_contact" readonly="state == 'resolved'"/>
                             <field name="resolution_type" widget="radio" options="{'horizontal': true}" readonly="state == 'resolved'"/>
+                            <field name="is_chargeable" widget="boolean_toggle" readonly="state == 'resolved'"/>
                         </group>
 
                         <group string="Assignment &amp; Deadlines">
@@ -116,6 +125,17 @@
                             <field name="service_center_id" readonly="1" invisible="not service_center_id"/>
                             <field name="technician_id" readonly="1" invisible="not technician_id"/>
                             <field name="sla_deadline" readonly="1" invisible="not sla_deadline"/>
+                            <field name="is_suspect_duplicate" invisible="1"/>
+                            <field name="fraud_risk_level" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Paid Service Matrix" invisible="not is_chargeable">
+                        <group>
+                            <field name="estimated_charge_amount" required="is_chargeable" readonly="state == 'resolved'"/>
+                        </group>
+                        <group>
+                            <field name="charge_reason" placeholder="e.g., Device out of warranty scope or has physical liquid damage..." required="is_chargeable" readonly="state == 'resolved'"/>
                         </group>
                     </group>
 
@@ -171,7 +191,6 @@
                                     <field name="refund_amount" placeholder="0.00" required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
                                     <field name="refund_reason" placeholder="State reason why repair/replacement isn't feasible (e.g., Out of Stock)..." required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
                                 </group>
-                                
                             </div>
                         </page>
 
@@ -188,10 +207,62 @@
         </field>
     </record>
 
-    <record id="action_ms_warranty_claim" model="ir.actions.act_window">
+    <record id="view_ms_warranty_claim_graph" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.graph</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <graph string="Warranty Claims Analytics" sample="1">
+                <field name="product_id"/>
+                <field name="total_claim_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_pivot" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.pivot</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <pivot string="Warranty Claims Matrix" sample="1">
+                <field name="product_id" type="row"/>
+                <field name="issue_category" type="col"/>
+                <field name="total_claim_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_search_inherit" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.search</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <search string="Search Claims">
+                <field name="name"/>
+                <field name="registration_id"/>
+                <field name="product_id"/>
+                <field name="dealer_id"/>
+                <field name="service_center_id"/>
+                
+                <filter string="Submitted" name="state_submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Under Review" name="state_review" domain="[('state', '=', 'under_review')]"/>
+                <filter string="Approved" name="state_approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
+                
+                <group>
+                    <filter string="Product" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Issue Category" name="group_by_issue" context="{'group_by': 'issue_category'}"/>
+                    <filter string="Dealer/Store" name="group_by_dealer" context="{'group_by': 'dealer_id'}"/>
+                    <filter string="Service Center" name="group_by_center" context="{'group_by': 'service_center_id'}"/>
+                    <filter string="Resolution Type" name="group_by_resolution" context="{'group_by': 'resolution_type'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+   <record id="action_ms_warranty_claim" model="ir.actions.act_window">
         <field name="name">Warranty Claims</field>
         <field name="res_model">ms.warranty.claim</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_ms_warranty_claim_search_inherit"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No warranty claims found!
@@ -200,6 +271,13 @@
                 Claims submitted from the public portal will appear here.
             </p>
         </field>
+    </record>
+
+    <record id="action_ms_warranty_claim_analytics" model="ir.actions.act_window">
+        <field name="name">Warranty Analytics</field>
+        <field name="res_model">ms.warranty.claim</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_group_by_product': 1}</field>
     </record>
 
 </odoo>

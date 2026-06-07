@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_warranty_card" model="ir.actions.report">
+        <field name="name">Print Warranty Card</field>
+        <field name="model">ms.warranty.qr.token</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">ms_warranty_qr_claim_portal.report_warranty_card_template</field>
+        <field name="report_file">ms_warranty_qr_claim_portal.report_warranty_card_template</field>
+        <field name="binding_model_id" ref="model_ms_warranty_qr_token"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_warranty_card_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="border: 2px solid #28a745; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto; font-family: sans-serif;">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <h2 style="color: #28a745; margin: 0;">OFFICIAL WARRANTY CARD</h2>
+                            <p style="text-muted; font-size: 12px;">Scan the QR code to activate or check status</p>
+                        </div>
+                        
+                        <div style="margin-bottom: 15px; text-align: center;">
+                            <img t-if="doc.qr_code_image" t-att-src="image_data_uri(doc.qr_code_image)" style="max-height: 150px; max-width: 150px;"/>
+                        </div>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <tr>
+                                <td style="font-weight: bold; padding: 5px;">Product:</td>
+                                <td style="padding: 5px;"><t t-out="doc.product_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 5px;">Serial Number:</td>
+                                <td style="padding: 5px; color: #d9534f; font-weight: bold;"><t t-out="doc.serial_no"/></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 5px;">Status:</td>
+                                <td style="padding: 5px;"><t t-out="doc.live_warranty_status"/></td>
+                            </tr>
+                        </table>
+                        
+                        <div style="margin-top: 20px; text-align: center; font-size: 11px; color: #777;">
+                            Thank you for your purchase! Please preserve this card for any future claim requests.
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

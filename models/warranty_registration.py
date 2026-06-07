@@ -10,6 +10,9 @@ class WarrantyRegistration(models.Model):
     _order = 'registration_date desc'
 
     name = fields.Char(string='Registration No', required=True, copy=False, readonly=True, default=lambda self: _('New'))
+
+    event_log_ids = fields.One2many('ms.warranty.event.log', 'registration_id', string='Extension & Event History', readonly=True)
+    invoice_name = fields.Char(string="Invoice File Name")
     
     # Customer Details
     customer_name = fields.Char(string='Customer Name', required=True, tracking=True)
@@ -23,10 +26,20 @@ class WarrantyRegistration(models.Model):
     dealer_id = fields.Many2one('res.partner', string='Dealer/Store', help="Where the product was bought")
     invoice_proof = fields.Binary(string='Invoice Proof/Photo')
     
-    # Link with US-001 Policy
+    
     policy_id = fields.Many2one('ms.warranty.policy', string='Warranty Policy', required=False)
     registration_date = fields.Date(string='Registration Date', default=fields.Date.context_today, readonly=True)
     expiry_date = fields.Date(string='Warranty Expiry', compute='_compute_expiry_date', store=True)
+
+    # Ownership Transfer Tracking
+    previous_owner_name = fields.Char(string="Previous Owner")
+    previous_owner_phone = fields.Char(string="Previous Owner Phone")
+    previous_owner_email = fields.Char(string="Previous Owner Email")
+
+    last_transfer_date = fields.Date(string="Last Transfer Date")
+    last_transfer_note = fields.Text(string="Last Transfer Note")
+
+    ownership_transfer_count = fields.Integer(string="Transfer Count", default=0)
     
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -99,3 +112,15 @@ class WarrantyRegistration(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('ms.warranty.registration') or _('New')
         return super(WarrantyRegistration, self).create(vals_list)
+    
+    @api.model
+    def _cron_check_warranty_expiry(self):
+        today = fields.Date.today()
+        expired_records = self.search([
+            ('state', '=', 'approved'),
+            ('expiry_date', '<', today)
+        ])
+        if expired_records:
+            expired_records.write({'state': 'expired'})
+            for record in expired_records:
+                record.message_post(body=_("Automated Cron Job: Warranty has expired based on the calculated expiry date."))

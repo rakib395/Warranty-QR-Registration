@@ -9,12 +9,12 @@ class WarrantyQRToken(models.Model):
     _name = 'ms.warranty.qr.token'
     _description = 'Warranty QR Token'
 
-    name = fields.Char(string='Name', required=True)
+    name = fields.Char( string='Name',required=True,default=lambda self: self.env['ir.sequence'].next_by_code('ms.warranty.qr.token') or '/',copy=False)
     token = fields.Char(string='Token', required=True, default=lambda self: str(uuid.uuid4()), copy=False)
     token_hash = fields.Char(string='Token Hash')
     
     product_id = fields.Many2one('product.product', string='Product')
-    serial_no = fields.Char(string='Serial Number')
+    serial_no = fields.Char( string='Serial Number', copy=False)
     registration_id = fields.Many2one('ms.warranty.registration', string='Linked Registration')
     
     purpose = fields.Selection([
@@ -38,7 +38,10 @@ class WarrantyQRToken(models.Model):
     active = fields.Boolean(default=True)
     use_count = fields.Integer(string='Scan Count', default=0)
 
-    # US-004
+    _sql_constraints = [
+        ('uniq_serial_product', 'unique(product_id, serial_no)', 'Duplicate serial not allowed!')
+    ]
+
     live_warranty_status = fields.Selection([
         ('not_found', 'Not Registered'),
         ('pending', 'Pending Approval'),
@@ -74,22 +77,51 @@ class WarrantyQRToken(models.Model):
             else:
                 record.live_warranty_status = 'not_found'
 
-    # US-002: Generate secure URL using token instead of internal ID
     @api.depends('token', 'purpose')
     def _compute_qr_url(self):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
         for record in self:
-            record.url = f"{base_url}/warranty/{record.purpose}?token={record.token}"
+            if record.token:
+                record.url = f"{base_url}/warranty/{record.purpose}?token={record.token}"
+            else:
+                record.url = False
 
-    # QR Code image generation
     @api.depends('url')
     def _compute_qr_code_image(self):
         for record in self:
-            if record.url:
-                qr = qrcode.QRCode(version=1, box_size=10, border=5)
-                qr.add_data(record.url)
-                qr.make(fit=True)
-                img = qr.make_image(fill='black', back_color='white')
-                buffer = BytesIO()
-                img.save(buffer, format="PNG")
-                record.qr_code_image = base64.b64encode(buffer.getvalue())
+            if not record.url:
+                record.qr_code_image = False
+                continue
+
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(record.url)
+            qr.make(fit=True)
+
+            img = qr.make_image(fill='black', back_color='white')
+            buffer = BytesIO()
+            img.save(buffer, format="PNG")
+
+            record.qr_code_image = base64.b64encode(buffer.getvalue())
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        return super().create(vals_list)
+    
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        if not self.product_id:
+            self.serial_no = False
+            return
+        
+        used = set(self.env['ms.warranty.qr.token'].sudo().search([
+            ('product_id', '=', self.product_id.id),
+            ('serial_no', '!=', False)
+        ]).mapped('serial_no'))
+
+        lot = self.env['stock.lot'].sudo().search([
+            ('product_id', '=', self.product_id.id),
+            ('name', '!=', False),
+            ('name', 'not in', list(used))
+        ], order='id asc', limit=1)
+
+        self.serial_no = lot.name if lot else False

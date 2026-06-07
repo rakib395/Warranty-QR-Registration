@@ -22,7 +22,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="name"/>
+                            <field name="name" readonly="1" placeholder="New"/>
                             <field name="purpose"/>
                             <field name="product_id"/>
                             <field name="serial_no"/>

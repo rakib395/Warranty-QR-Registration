@@ -66,6 +66,8 @@
                             <field name="auto_approve_registration" invisible="not registration_required"/>
                             <field name="registration_deadline_days" invisible="not registration_required"/>
                             <field name="allow_late_registration" invisible="not registration_required"/>
+
+                            <field name="allow_transfer"/>
                         </group>
                     </group>
 

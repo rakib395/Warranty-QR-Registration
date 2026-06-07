@@ -15,7 +15,7 @@ class WarrantyPolicy(models.Model):
     description = fields.Text(string='Customer Policy Summary')
     internal_note = fields.Text(string='Internal Instruction')
 
-    # US-001: Policy Duration Rules
+    
     warranty_duration_value = fields.Integer(string='Duration Number', default=1, required=True, tracking=True)
     warranty_duration_unit = fields.Selection([
         ('days', 'Days'),
@@ -32,7 +32,7 @@ class WarrantyPolicy(models.Model):
         ('manual', 'Manual Date')
     ], string='Start Basis', default='registration_date', required=True, tracking=True)
 
-    # US-001: Claim & Registration Rules
+    #  Claim & Registration 
     registration_required = fields.Boolean(string='Registration Required', default=True, tracking=True)
     auto_approve_registration = fields.Boolean(string='Auto Approve Registration', default=False)
     registration_deadline_days = fields.Integer(string='Registration Deadline (Days)', help="Days from purchase")
@@ -44,7 +44,14 @@ class WarrantyPolicy(models.Model):
     
     max_claim_count = fields.Integer(string='Max Claims Allowed', default=0, help="0 means unlimited")
 
-    # US-001: Coverage & Exclusions
+    allow_transfer = fields.Boolean(
+        string='Allow Ownership Transfer', 
+        default=True, 
+        tracking=True,
+        help="If unchecked, manual warranty transfer will be restricted for this policy."
+    )
+
+    # Coverage & Exclusions
     coverage_ids = fields.One2many('ms.warranty.coverage.term', 'policy_id', string='Coverage Terms')
     exclusion_ids = fields.One2many('ms.warranty.exclusion', 'policy_id', string='Exclusions')
 
@@ -59,7 +66,7 @@ class WarrantyPolicy(models.Model):
             record.claim_count = self.env['ms.warranty.claim'].search_count([('policy_id', '=', record.id)]) if 'ms.warranty.claim' in self.env else 0
 
 
-    # Business Logic: Validation
+    # Validation
     @api.constrains('warranty_duration_value')
     def _check_duration_value(self):
         for record in self:
@@ -71,26 +78,31 @@ class WarrantyPolicy(models.Model):
     ]
 
 
-    # Smart Button Actions
     def action_view_registrations(self):
+        self.ensure_one()
         return {
             'name': _('Warranty Registrations'),
             'type': 'ir.actions.act_window',
             'res_model': 'ms.warranty.registration',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
+            'view_type': 'form',  # ওডু ১৯ সাপোর্টের জন্য
             'domain': [('policy_id', '=', self.id)],
             'context': {'default_policy_id': self.id},
+            'target': 'current',
         }
 
 
     def action_view_claims(self):
+        self.ensure_one()
         return {
             'name': _('Warranty Claims'),
             'type': 'ir.actions.act_window',
             'res_model': 'ms.warranty.claim',
-            'view_mode': 'tree,form',
-            'domain': [('policy_id', '=', self.id)],
-            'context': {'default_policy_id': self.id},
+            'view_mode': 'list,form',
+            'view_type': 'form', 
+            'domain': [('registration_id.policy_id', '=', self.id)],
+            'context': {},
+            'target': 'current',
         }
 
 

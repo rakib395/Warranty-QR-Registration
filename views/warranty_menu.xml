@@ -6,7 +6,7 @@
               sequence="10"
               web_icon="ms_warranty_qr_claim_portal,static/description/icon.png"/>
 
-    <!-- Registration Menu (US-003) -->
+    <!-- Registration Menu -->
     <menuitem id="ms_warranty_registration_menu" 
               name="Registrations" 
               parent="ms_warranty_root_menu" 
@@ -19,7 +19,7 @@
               parent="ms_warranty_root_menu"
               sequence="100"/>
 
-    <!-- Warranty Policy Menu (US-001) -->
+    <!-- Warranty Policy Menu -->
     <menuitem id="ms_warranty_policy_menu"
               name="Warranty Policies"
               parent="ms_warranty_config_menu"
@@ -38,6 +38,80 @@
               name="Warranty Claims"
               action="action_ms_warranty_claim"
               parent="ms_warranty_root_menu" 
+              sequence="30"/>
+
+    
+    <menuitem id="ms_warranty_reporting_menu"
+              name="Reporting"
+              parent="ms_warranty_root_menu"
+              sequence="50"/>
+
+    <menuitem id="ms_warranty_analytics_sub_menu"
+              name="Claims Analytics"
+              parent="ms_warranty_reporting_menu"
+              action="action_ms_warranty_claim_analytics"
+              sequence="10"/>
+    
+    <record id="view_ms_warranty_service_center_tree" model="ir.ui.view">
+        <field name="name">ms.warranty.service.center.list</field>
+        <field name="model">ms.warranty.service.center</field>
+        <field name="arch" type="xml">
+            <list string="Service Centers">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_service_center_form" model="ir.ui.view">
+        <field name="name">ms.warranty.service.center.form</field>
+        <field name="model">ms.warranty.service.center</field>
+        <field name="arch" type="xml">
+            <form string="Service Center">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Service Center Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Dhaka Central Service Center"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="e.g. DAC-01"/>
+                            <field name="phone"/>
+                        </group>
+                        <group>
+                            <field name="email"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Location Details">
+                        <field name="address" placeholder="Enter full address here..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ms_warranty_service_center" model="ir.actions.act_window">
+        <field name="name">Service Centers</field>
+        <field name="res_model">ms.warranty.service.center</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Service Center!
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_ms_warranty_service_center"
+              name="Service Centers"
+              parent="ms_warranty_config_menu"
+              action="action_ms_warranty_service_center"
               sequence="30"/>
 
 </odoo>

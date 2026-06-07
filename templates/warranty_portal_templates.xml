@@ -161,17 +161,24 @@
                             </t>
 
                             <t t-else="">
-                                <h2 class="text-center mb-4 text-secondary" style="font-weight: 900; color: #396485df !important;"> Registration For Warranty </h2>
+                                    <h2 class="text-center mb-4 text-secondary" style="font-weight: 900; color: #396485df !important;"> Registration For Warranty </h2>
 
-                                <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
-                                    <i class="fa fa-exclamation-triangle mr-2"/> Serial number already registered in our system! Please verify your serial number.
-                                </div>
-                                
-                                <div t-if="error == 'invalid_data'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
-                                    <i class="fa fa-info-circle mr-2"/> Submission failed. Please ensure all data is correct.
-                                </div>
+                                  
+                                    <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
+                                        <i class="fa fa-exclamation-triangle mr-2"/> Serial number already registered in our system! Please verify your serial number.
+                                    </div>
 
-                                <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
+                                   
+                                    <div t-if="error == 'pending_registration'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                        <i class="fa fa-clock-o mr-2"/> This serial number is already submitted and pending for approval!
+                                    </div>
+
+                            
+                                    <div t-if="error == 'invalid_data'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                        <i class="fa fa-info-circle mr-2"/> Submission failed. Please ensure all data is correct.
+                                    </div>
+
+                                    <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                     <input type="hidden" name="current_token" t-att-value="current_token"/>
                                     
@@ -189,23 +196,17 @@
                                             <input type="email" class="form-control form-control-lg bg-light border-0" name="customer_email" required="1"/>
                                         </div>
 
-                                        <div class="form-group col-md-6 mb-3">
-                                            <label class="fw-bold text-muted small uppercase mb-1" for="product_id">Product</label>
-                                            <select name="product_id" class="form-select form-control-lg bg-light border-0" required="1">
-                                                <t t-foreach="products" t-as="product">
-                                                    <option t-att-value="product.id" t-att-selected="product.id == token_product_id">
-                                                        <t t-esc="product.name"/>
-                                                    </option>
-                                                </t>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group col-md-6 mb-3">
-                                            <label class="fw-bold text-muted small uppercase mb-1" for="serial_no">Serial Number</label>
-                                            <input type="text" class="form-control form-control-lg bg-light border-0" name="serial_no" 
-                                                   t-att-value="token_serial_no" 
-                                                   placeholder="Enter Product Serial Number" required="1"/>
-                                            <small class="text-muted d-block mt-1" style="font-size: 11px;">Please input the actual serial number printed on the product.</small>
+                                        <div class="row">
+                                            <div class="form-group col-md-6 mb-3">
+                                                <label class="fw-bold text-muted small uppercase mb-1">Product Name</label>
+                                                <input type="text" class="form-control form-control-lg bg-light border-0" 
+                                                    t-att-value="product_name" readonly="1"/>
+                                            </div>
+                                            <div class="form-group col-md-6 mb-3">
+                                                <label class="fw-bold text-muted small uppercase mb-1" for="serial_no">Product Serial Number</label>
+                                                <input type="text" class="form-control form-control-lg bg-light border-0" 
+                                                    name="serial_no" t-att-value="token_serial_no" readonly="1" required="1"/>
+                                            </div>
                                         </div>
 
                                         <div class="form-group col-md-6 mb-3">
