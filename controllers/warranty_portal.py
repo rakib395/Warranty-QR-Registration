@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import base64
+import logging
+from datetime import date
 from odoo import http, _
 from odoo.http import request
-import base64
-from datetime import date
 from odoo.exceptions import ValidationError, UserError
+_logger = logging.getLogger(__name__)
 
 class WarrantyPublic(http.Controller):
 
@@ -63,6 +65,11 @@ class WarrantyPublic(http.Controller):
         products = request.env['product.template'].sudo().search([('sale_ok', '=', True)])
         dealers = request.env['res.partner'].sudo().search([('is_company', '=', True)])
         
+        current_user = request.env.user
+        is_dealer = False
+        if current_user and current_user != request.env.ref('base.public_user'):
+            is_dealer = True
+
         return request.render("ms_warranty_qr_claim_portal.public_registration_template", {
             'products': products,
             'dealers': dealers,
@@ -78,9 +85,12 @@ class WarrantyPublic(http.Controller):
             'live_status': live_status,
             'claim_success': post.get('claim_success'),
             'claim_num': post.get('claim_num'), 
+            'is_dealer': is_dealer,
+            'registration': registration,
+            'claim_ids': registration.claim_ids if registration and hasattr(registration, 'claim_ids') else False,
         })
 
-    @http.route(['/warranty/submit'], type='http', auth="public", methods=['POST'], website=True)
+    @http.route(['/warranty/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty(self, **post):
         token_str = post.get('current_token')
         if not token_str:
@@ -136,8 +146,11 @@ class WarrantyPublic(http.Controller):
 
         invoice_file = post.get('invoice_proof')
         invoice_data = False
-        if invoice_file:
-            invoice_data = base64.b64encode(invoice_file.read())
+        # SAFE BUFFER STREAM CHECK
+        if invoice_file and hasattr(invoice_file, 'read'):
+            read_data = invoice_file.read()
+            if read_data:
+                invoice_data = base64.b64encode(read_data)
 
         vals = {
             'customer_name': post.get('customer_name'),
@@ -154,7 +167,6 @@ class WarrantyPublic(http.Controller):
 
         try:
             registration = request.env['ms.warranty.registration'].sudo().create(vals)
-            
             qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
             if qr_token:
                 qr_token.sudo().write({
@@ -163,15 +175,15 @@ class WarrantyPublic(http.Controller):
                     'use_count': qr_token.use_count + 1
                 })
         except ValidationError as ve:
-            print("=== WARRANTY SUBMISSION VALIDATION ERROR ===", str(ve))
+            _logger.error("Warranty registration validation error: %s", str(ve))
             return request.redirect(f'/warranty/registration?token={token_str}&error=duplicate_serial')
         except Exception as e:
-            print("=== WARRANTY SUBMISSION UNKNOWN ERROR ===", str(e))
+            _logger.error("Warranty registration creation failed: %s", str(e))
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
 
         return request.render("ms_warranty_qr_claim_portal.registration_success_page")
 
-    @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True)
+    @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty_claim(self, **post):
         token_str = post.get('current_token')
         serial_no = post.get('serial_no')
@@ -187,15 +199,29 @@ class WarrantyPublic(http.Controller):
         if not registration or (registration.expiry_date and registration.expiry_date < date.today()):
             return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
 
+        current_user = request.env.user
+        public_user = request.env.ref('base.public_user')
+        is_dealer = current_user and current_user != public_user
+        
+        if is_dealer and registration.dealer_id and registration.dealer_id.id != current_user.partner_id.id:
+            return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
+
         photo_file = post.get('product_photo')
         photo_data = False
-        if photo_file:
-            photo_data = base64.b64encode(photo_file.read())
+        if photo_file and hasattr(photo_file, 'read'):
+            read_photo = photo_file.read()
+            if read_photo:
+                photo_data = base64.b64encode(read_photo).decode('utf-8')
 
         invoice_file = post.get('invoice_proof')
         invoice_data = False
-        if invoice_file:
-            invoice_data = base64.b64encode(invoice_file.read())
+        if invoice_file and hasattr(invoice_file, 'read'):
+            read_invoice = invoice_file.read()
+            if read_invoice:
+                invoice_data = base64.b64encode(read_invoice).decode('utf-8')
+
+        source_val = 'dealer' if is_dealer else 'public'
+        submitted_by_val = current_user.id if is_dealer else False
 
         vals = {
             'registration_id': registration.id,
@@ -205,11 +231,164 @@ class WarrantyPublic(http.Controller):
             'product_photo': photo_data,
             'invoice_proof': invoice_data,
             'state': 'submitted',
+            'claim_source': source_val,                                        
+            'submitted_by_id': submitted_by_val,          
         }
 
         try:
             claim = request.env['ms.warranty.claim'].sudo().create(vals)
             return request.redirect(f'/warranty/registration?token={token_str}&claim_success=1&claim_num={claim.name}')
         except Exception as e:
-            print("=== WARRANTY CLAIM SUBMISSION ERROR ===", str(e))
+            _logger.error("Warranty claim submission failed: %s", str(e))
             return request.redirect(f'/warranty/registration?token={token_str}&error=claim_failed')
+
+    @http.route(['/warranty/claim/chargeable_approve'], type='http', auth="user", methods=['POST'], website=True)
+    def approve_chargeable_repair(self, **post):
+        token_str = post.get('current_token')
+        claim_id = int(post.get('claim_id')) if post.get('claim_id') else False
+        
+        if claim_id:
+            claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+            if claim and claim.registration_id.dealer_id.id == request.env.user.partner_id.id:
+                claim.sudo().write({'customer_approved': True})
+                return request.redirect(f'/warranty/registration?token={token_str}&claim_success=1&claim_num={claim.name}')
+        
+        return request.redirect('/')
+
+class WarrantyServiceCenterPortal(http.Controller):
+    """ Service Center Portal Handler (BR-021, 32.4, 32.5, 32.9, BR-011) """
+
+    @http.route(['/my/service-center/claims'], type='http', auth="user", website=True)
+    def warranty_service_center_portal(self, **kw):
+        user = request.env.user
+        service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+        
+        if not service_center:
+            raise UserError(_("Your user account is not linked to any Service Center. Please contact your administrator."))
+            
+        domain = [('service_center_id', '=', service_center.id)]
+        claims = request.env['ms.warranty.claim'].sudo().search(domain, order="create_date desc")
+        
+        return request.render('ms_warranty_qr_claim_portal.service_center_claims_list_template', {
+            'claims': claims,
+            'today': date.today(),
+            'error': kw.get('error'),
+            'success': kw.get('success'),
+        })
+
+    @http.route(['/my/service-center/claim/<int:claim_id>'], type='http', auth="user", website=True)
+    def service_center_claim_detail(self, claim_id, **kw):
+        user = request.env.user
+        claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+        
+        user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+        
+        if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
+            return request.render("http_routing.403")
+        
+        products = request.env['product.product'].sudo().search([('sale_ok', '=', True)])
+
+        return request.render("ms_warranty_qr_claim_portal.service_center_claim_detail_template", {
+            'claim': claim,
+            'products': products,
+            'today': date.today(),
+            'error': kw.get('error'),
+            'success': kw.get('success'),
+        })
+
+    @http.route(['/my/service-center/claim/update_inspection'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    def update_inspection(self, **post):
+        claim_id = int(post.get('claim_id'))
+        user = request.env.user
+        claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+        
+        user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+
+        if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
+            return request.render("http_routing.403")
+
+        vals = {
+            'diagnosis': post.get('diagnosis'),
+            'inspection_result': post.get('inspection_result'),
+            'is_covered': True if post.get('is_covered') == '1' else False,
+        }
+        claim.sudo().write(vals)
+        return request.redirect(f'/my/service-center/claim/{claim_id}?success=inspection_updated')
+
+    @http.route(['/my/service-center/claim/add_lines'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    def add_repair_lines(self, **post):
+        claim_id = int(post.get('claim_id'))
+        user = request.env.user
+        claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+        
+        user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+
+        if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
+            return request.render("http_routing.403")
+
+        part_product_ids = request.httprequest.form.getlist('part_product_id')
+        part_qtys = request.httprequest.form.getlist('part_qty')
+        labor_notes = request.httprequest.form.getlist('labor_note')
+        labor_costs = request.httprequest.form.getlist('labor_cost')
+
+        for prod_id, qty in zip(part_product_ids, part_qtys):
+            if prod_id and qty:
+                request.env['ms.warranty.claim.part.line'].sudo().create({
+                    'claim_id': claim.id,
+                    'product_id': int(prod_id),
+                    'quantity': float(qty),
+                })
+
+        for note, cost in zip(labor_notes, labor_costs):
+            if note and cost:
+                request.env['ms.warranty.claim.labor.line'].sudo().create({
+                    'claim_id': claim.id,
+                    'description': note,
+                    'labor_cost': float(cost),
+                })
+
+        if post.get('action_submit') == 'resolved':
+            claim.sudo().write({'state': 'resolved'})
+            return request.redirect('/my/service-center/claims?success=claim_resolved')
+
+        return request.redirect(f'/my/service-center/claim/{claim_id}?success=lines_added')
+
+    @http.route(['/my/service-center/claim/convert_chargeable'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    def convert_chargeable(self, **post):
+        claim_id = int(post.get('claim_id'))
+        user = request.env.user
+        claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+        
+        user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+
+        if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
+            return request.render("http_routing.403")
+
+        estimated_cost = float(post.get('estimated_cost', 0.0))
+        claim.sudo().write({
+            'is_covered': False,
+            'estimated_cost': estimated_cost,
+            'customer_approved': False
+        })
+        return request.redirect(f'/my/service-center/claim/{claim_id}?success=converted_chargeable')
+
+    @http.route(['/my/service-center/claim/reject'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    def reject_claim(self, **post):
+        claim_id = int(post.get('claim_id'))
+        user = request.env.user
+        claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
+        
+        user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
+
+        if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
+            return request.render("http_routing.403")
+
+        rejection_reason = post.get('rejection_reason')
+        if not rejection_reason or not rejection_reason.strip():
+            return request.redirect(f'/my/service-center/claim/{claim_id}?error=missing_reason')
+
+        claim.sudo().write({
+            'state': 'rejected',
+            'rejection_reason': rejection_reason
+        })
+        return request.redirect('/my/service-center/claims?success=claim_rejected')

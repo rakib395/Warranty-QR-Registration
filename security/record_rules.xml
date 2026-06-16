@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Rule for Dealer: Access Control for Warranty Claims -->
+    <record id="ms_warranty_claim_dealer_rule" model="ir.rule">
+        <field name="name">Dealer: See Only Owned or Submitted Warranty Claims</field>
+        <field name="model_id" ref="model_ms_warranty_claim"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[
+            '|', 
+            ('submitted_by_id', '=', user.id), 
+            ('registration_id.dealer_id', '=', user.partner_id.id)
+        ]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Rule for Dealer: Access Control for Warranty Registrations -->
+    <record id="ms_warranty_registration_dealer_rule" model="ir.rule">
+        <field name="name">Dealer: See Only Owned Product Registrations</field>
+        <field name="model_id" ref="model_ms_warranty_registration"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('dealer_id', '=', user.partner_id.id)]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Rule for Dealer: Part Lines Access Control -->
+    <record id="ms_warranty_claim_part_line_dealer_rule" model="ir.rule">
+        <field name="name">Dealer: Part Lines Rules</field>
+        <field name="model_id" ref="model_ms_warranty_claim_part_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[
+            '|',
+            ('claim_id.submitted_by_id', '=', user.id),
+            ('claim_id.registration_id.dealer_id', '=', user.partner_id.id)
+        ]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Rule for Dealer: Labor Lines Access Control -->
+    <record id="ms_warranty_claim_labor_line_dealer_rule" model="ir.rule">
+        <field name="name">Dealer: Labor Lines Rules</field>
+        <field name="model_id" ref="model_ms_warranty_claim_labor_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[
+            '|',
+            ('claim_id.submitted_by_id', '=', user.id),
+            ('claim_id.registration_id.dealer_id', '=', user.partner_id.id)
+        ]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+</odoo>

@@ -35,13 +35,17 @@ class WarrantyClaim(models.Model):
         ('resolved', 'Resolved')
     ], string='Status', default='submitted', required=True, tracking=True)
 
-    rejection_reason = fields.Text(string='Rejection Reason', readonly=True, tracking=True)
+    # --- Inspection & Workflow Fields ---
+    diagnosis = fields.Text(string='Diagnosis', tracking=True)
+    inspection_result = fields.Text(string='Inspection Result', tracking=True)
+    is_covered = fields.Boolean(string='Is Covered Under Warranty', default=True, tracking=True)
+    estimated_cost = fields.Float(string='Estimated Cost', tracking=True)
+    rejection_reason = fields.Text(string='Rejection Reason', tracking=True)
 
     service_center_id = fields.Many2one('ms.warranty.service.center', string='Service Center', tracking=True)
     technician_id = fields.Many2one('res.users', string='Assigned Technician', tracking=True)
     sla_deadline = fields.Date(string='SLA Deadline', readonly=True, tracking=True)
 
-    diagnosis = fields.Text(string='Diagnosis', tracking=True)
     repair_notes = fields.Text(string='Repair Notes')
     part_lines = fields.One2many('ms.warranty.claim.part.line', 'claim_id', string='Replaced Parts')
     labor_lines = fields.One2many('ms.warranty.claim.labor.line', 'claim_id', string='Labor/Service Lines')
@@ -71,18 +75,26 @@ class WarrantyClaim(models.Model):
     ], string='Fraud Risk Level', compute='_compute_fraud_analysis', store=True, default='low', tracking=True)
     fraud_warning_notes = fields.Text(string='Fraud System Detection Logs', compute='_compute_fraud_analysis', store=True)
 
-    
     dealer_id = fields.Many2one('res.partner', string='Dealer/Store', related='registration_id.dealer_id', store=True, index=True)
     product_id = fields.Many2one('product.product', string='Product', related='registration_id.product_id', store=True, index=True)
     total_claim_cost = fields.Float(string='Total Claim Cost', compute='_compute_total_claim_cost', store=True, tracking=True)
+
+    # Portal Tracking Fields
+    claim_source = fields.Selection([
+        ('public', 'Public Portal/Customer'),
+        ('dealer', 'Dealer Portal')
+    ], string='Claim Source', default='public', required=True, tracking=True)
+    
+    submitted_by_id = fields.Many2one('res.users', string='Submitted By (User)', default=lambda self: self.env.user, index=True, tracking=True)
+    customer_approved = fields.Boolean(string='Charge Approved by Customer', default=False, tracking=True, help="Dealer can approve estimated repair costs from portal on behalf of the customer.")
 
     @api.depends('part_lines.subtotal', 'labor_lines.subtotal', 'refund_amount', 'resolution_type')
     def _compute_total_claim_cost(self):
         for claim in self:
             cost = 0.0
             if claim.resolution_type == 'repair':
-                parts_cost = sum(claim.part_lines.mapped('subtotal'))
-                labor_cost = sum(claim.labor_lines.mapped('subtotal'))
+                parts_cost = sum(claim.part_lines.mapped('subtotal')) if claim.part_lines else 0.0
+                labor_cost = sum(claim.labor_lines.mapped('subtotal')) if claim.labor_lines else 0.0
                 cost = parts_cost + labor_cost
             elif claim.resolution_type == 'refund':
                 cost = claim.refund_amount
@@ -115,7 +127,7 @@ class WarrantyClaim(models.Model):
                 is_duplicate = True
                 risk_level = 'high'
                 claim_names = ", ".join(open_or_resolved_claims.mapped('name'))
-                warning_reasons.append(_("⚠️ DUPLICATE DETECTED: Active or resolved claim(s) [%s] already exist for this serial number.") % claim_names)
+                warning_reasons.append(_("DUPLICATE DETECTED: Active or resolved claim(s) [%s] already exist for this serial number.") % claim_names)
 
             current_date = claim.create_date.date() if claim.create_date else fields.Date.today()
             date_threshold = current_date - timedelta(days=30)
@@ -135,7 +147,7 @@ class WarrantyClaim(models.Model):
                 if reg_creation_days < 0 or reg_creation_days > 365:
                     is_duplicate = True
                     risk_level = 'high'
-                    warning_reasons.append(_(" MISMATCH: High variance between stated Purchase Invoice Date and system Registration Record Date."))
+                    warning_reasons.append(_("MISMATCH: High variance between stated Purchase Invoice Date and system Registration Record Date."))
 
             claim.is_suspect_duplicate = is_duplicate
             claim.fraud_risk_level = risk_level
@@ -155,14 +167,22 @@ class WarrantyClaim(models.Model):
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('ms.warranty.claim') or _('New')
         return super(WarrantyClaim, self).create(vals_list)
-    
+
+   
+    def action_inspect(self):
+        """Move the claim to the inspection or review state"""
+        self.ensure_one()
+        self.write({
+            'state': 'under_review',
+            'inspection_result': 'Product received and under initial inspection.'
+        })
+        self.message_post(body=_("Claim status updated to 'Under Review' for technical inspection."))
+
     def action_under_review(self):
-        """Put the claim under review state"""
         self.ensure_one()
         self.write({'state': 'under_review'})
 
     def action_approve(self):
-        """US-006: Approve the warranty claim and log/notify"""
         self.ensure_one()
         self.write({
             'state': 'approved',
@@ -173,24 +193,46 @@ class WarrantyClaim(models.Model):
             subtype_xmlid="mail.mt_comment"
         )
 
+    def action_repair(self):
+        """Initiate the repairing process track"""
+        self.ensure_one()
+        if not self.diagnosis:
+            raise UserError(_("Please provide a diagnosis before moving to the repair workflow."))
+        self.message_post(body=_("Technical diagnosis complete. Repair workflow initiated."))
+
     def action_resolved(self):
-        """Mark the claim as resolved"""
         self.ensure_one()
         self.write({'state': 'resolved'})
 
-    def action_reset_to_review(self):
-        """US-006: Reset claim back to Under Review from final states if needed"""
+    def action_resolve(self):
+        """Completely resolve the claim based on resolution type"""
         self.ensure_one()
-        self.write({
-            'state': 'under_review'
-        })
-        self.message_post(
-            body=_("Warranty claim has been reset to 'Under Review' status by the administrator."),
-            subtype_xmlid="mail.mt_comment"
-        )
+        if self.resolution_type == 'repair':
+            self.action_mark_as_repaired()
+        elif self.resolution_type == 'replacement':
+            self.action_approve_replacement()
+        elif self.resolution_type == 'refund':
+            self.action_approve_refund()
+        else:
+            self.write({'state': 'resolved'})
+
+    def action_reject(self):
+        """Reject the warranty claim"""
+        self.ensure_one()
+        if not self.rejection_reason:
+            self.rejection_reason = "Claim rejected after technical review/inspection."
+        self.write({'state': 'rejected'})
+        self.message_post(body=_("Warranty claim has been rejected. Reason: %s") % self.rejection_reason)
+
+    def action_convert_chargeable(self):
+        self.action_convert_to_chargeable()
+
+    def action_reset_to_review(self):
+        self.ensure_one()
+        self.write({'state': 'under_review'})
+        self.message_post(body=_("Warranty claim has been reset to 'Under Review' status by the administrator."))
 
     def action_assign_claim_processing(self, service_center_id, technician_id):
-        """US-007: core logic to update state, calculate SLA, and create automated activity"""
         self.ensure_one()
         calculated_deadline = fields.Date.today() + timedelta(days=7)
              
@@ -220,7 +262,6 @@ class WarrantyClaim(models.Model):
         )
 
     def action_mark_as_repaired(self):
-        """Validate diagnosis/notes and close the claim as repaired"""
         self.ensure_one()
         if not self.diagnosis:
             raise UserError(_("Please provide a proper diagnosis before marking the claim as repaired."))
@@ -237,7 +278,6 @@ class WarrantyClaim(models.Model):
         self.message_post(body=log_body, subtype_xmlid="mail.mt_comment")
 
     def action_approve_replacement(self):
-        """Approve and execute product replacement with carry-forward warranty logic"""
         self.ensure_one()
         if not self.replacement_product_id:
             raise UserError(_("Please capture the Replacement Product before approval."))
@@ -280,7 +320,6 @@ class WarrantyClaim(models.Model):
         self.message_post(body=log_body, subtype_xmlid="mail.mt_comment")
 
     def action_approve_refund(self):
-        """Mark claim for refund, void old warranty registration and create a Draft Credit Note"""
         self.ensure_one()
         if self.refund_amount <= 0:
             raise UserError(_("Please provide a valid Refund Amount greater than 0."))
@@ -324,9 +363,7 @@ class WarrantyClaim(models.Model):
         
         self.message_post(body=log_body, subtype_xmlid="mail.mt_comment")
 
-
     def action_convert_to_chargeable(self):
-        """Convert out-of-warranty/invalid claim to chargeable and auto-generate a Draft Quotation"""
         self.ensure_one()
         if self.estimated_charge_amount <= 0:
             raise UserError(_("Please provide a valid Estimated Charge Amount greater than 0."))
@@ -375,7 +412,7 @@ class WarrantyClaim(models.Model):
             existing_activity = self.env['mail.activity'].search([
                 ('res_model', '=', 'ms.warranty.claim'),
                 ('res_id', '=', claim.id),
-                ('summary', '=', _("⚠️ SLA Deadline Breached!"))
+                ('summary', '=', _("SLA Deadline Breached!"))
             ], limit=1)
             
             if not existing_activity:
@@ -384,7 +421,7 @@ class WarrantyClaim(models.Model):
                 claim.activity_schedule(
                     activity_type_id=activity_type.id if activity_type else False,
                     date_deadline=today,
-                    summary=_("⚠️ SLA Deadline Breached!"),
+                    summary=_("SLA Deadline Breached!"),
                     note=_("The claim %s has breached its SLA deadline (%s). Please review immediately.") % (claim.name, claim.sla_deadline),
                     user_id=assign_user_id
                 )

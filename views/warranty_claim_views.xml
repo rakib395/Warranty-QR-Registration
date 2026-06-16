@@ -78,9 +78,11 @@
         <field name="arch" type="xml">
             <form string="Warranty Claim">
                 <header>
-                    <button name="action_under_review" string="Mark Under Review" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
+                    <button name="action_inspect" string="Mark Under Review" type="object" class="oe_highlight" invisible="state != 'submitted'"/>
                     
                     <button name="%(action_warranty_claim_assign_wizard)d" string="Assign to Center" type="action" class="oe_highlight btn-info" invisible="state != 'under_review'"/>
+                    
+                    <button name="action_repair" string="Start Repair Workflow" type="object" class="oe_highlight btn-primary" invisible="state != 'under_review'"/>
 
                     <button name="action_approve" string="Approve Claim" type="object" class="oe_highlight btn-success" invisible="state != 'under_review'"/>
                     <button name="%(action_warranty_claim_reject_wizard)d" string="Reject Claim" type="action" class="btn-danger" invisible="state != 'under_review'"/>
@@ -88,12 +90,12 @@
                     <button name="action_convert_to_chargeable" string="Convert to Chargeable" type="object" class="oe_highlight btn-dark" invisible="state not in ('under_review', 'approved') or is_chargeable == True"/>
 
                     <button name="action_mark_as_repaired" string="Mark as Repaired" type="object" class="oe_highlight btn-primary" invisible="state != 'approved' or resolution_type != 'repair'"/>
-                    
                     <button name="action_approve_replacement" string="Approve Replacement" type="object" class="oe_highlight btn-success" invisible="state != 'approved' or resolution_type != 'replacement'"/>
-                    
                     <button name="action_approve_refund" string="Approve &amp; Create Refund" type="object" class="oe_highlight btn-warning" invisible="state != 'approved' or resolution_type != 'refund'"/>
                     
-                    <button name="action_resolved" string="Mark Resolved" type="object" class="oe_highlight btn-info" invisible="state != 'approved'"/>
+                    <button name="action_resolve" string="Resolve Claim" type="object" class="oe_highlight btn-success" invisible="state != 'approved'"/>
+                    <button name="action_resolved" string="Mark Resolved Manually" type="object" class="btn-info" invisible="state != 'approved'"/>
+                    
                     <button name="action_reset_to_review" string="Reset to Review" type="object" class="btn-secondary" invisible="state not in ('approved', 'rejected', 'resolved')"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="submitted,under_review,approved,resolved"/>

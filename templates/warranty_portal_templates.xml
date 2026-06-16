@@ -9,35 +9,34 @@
                             
                             <t t-if="error == 'already_registered' or token_state == 'used'">
                                 <div class="text-center py-4">
-                                    
                                     <t t-if="claim_success">
                                         <div class="alert alert-success text-center shadow-sm rounded-3 mb-4 p-4" role="alert">
-                                            <h4 class="fw-bold"><i class="fa fa-paper-plane me-2"/>Claim Submitted Successfully!</h4>
+                                            <h4 class="fw-bold"><i class="fa fa-paper-plane me-2"/>Claim Processed / Submitted!</h4>
                                             <p class="mb-0 mt-2" style="font-size: 15px;">
-                                                Your claim request has been logged under Tracking Number: <strong><t t-out="claim_num"/></strong>. Our service agents will evaluate and get in touch shortly.
+                                                Your claim tracking sequence has been referenced under Number: <strong><t t-out="claim_num"/></strong>.
                                             </p>
                                         </div>
                                         
                                         <div class="mb-4">
                                             <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
                                         </div>
-                                        <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Thank You!</h2>
+                                        <h2 class="fw-bold text-dark mb-3" style="font-size: 32px;">Action Completed!</h2>
                                         <p class="text-muted mx-auto" style="max-width: 530px; font-size: 16px; line-height: 1.6;">
-                                            We have received your technical fault report. You can track your request using the claim number above.
+                                            The system state updated successfully. Service updates will reflect inside backend logs.
                                         </p>
                                     </t>
 
                                     <t t-else="">
                                         <div t-if="error == 'claim_failed'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
-                                            <i class="fa fa-exclamation-triangle mr-2"/> Failed to submit your claim request. Please try again.
+                                            <i class="fa fa-exclamation-triangle me-2"/> Failed to submit your claim request. Please try again.
                                         </div>
                                         
                                         <div t-if="error == 'not_eligible'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
-                                            <i class="fa fa-info-circle mr-2"/> This product's warranty is no longer eligible for claiming online.
+                                            <i class="fa fa-info-circle me-2"/> This product's warranty is no longer eligible or access restricted to specific dealer.
                                         </div>
 
                                         <div class="mb-4">
-                                            <i class="fa fa-check-circle text-success" style="font-size: 90px; opacity: 0.9;"/>
+                                            <i class="fa fa-shield text-info" style="font-size: 90px; opacity: 0.9;"/>
                                         </div>
                                         
                                         <t t-if="is_dealer_registered">
@@ -56,24 +55,24 @@
 
                                     <div class="row justify-content-center mt-4">
                                         <div class="col-md-10 text-start bg-light p-4 rounded-3 shadow-sm" style="border-left: 5px solid #28a745;">
-                                            <h5 class="fw-bold text-dark mb-3"><i class="fa fa-shield me-2 text-success"/>Active Coverage Details:</h5>
+                                            <h5 class="fw-bold text-dark mb-3"><i class="fa fa-shield me-2 text-success"/>Active Coverage &amp; Live Tracking:</h5>
 
                                             <div class="row mb-2">
-                                                <div class="col-sm-5 fw-bold text-muted">Warranty Status:</div>
+                                                <div class="col-sm-5 fw-bold text-muted">Eligibility Status:</div>
                                                 <div class="col-sm-7 fw-bold">
                                                     <t t-if="live_status == 'approved'">
-                                                        <span class="badge bg-success text-white px-3 py-2 rounded-pill"><i class="fa fa-check-circle me-1"/> Approved &amp; Active</span>
+                                                        <span class="badge bg-success text-white px-3 py-2 rounded-pill"><i class="fa fa-check-circle me-1"/> Eligible &amp; Active</span>
                                                     </t>
-                                                    <t t-elif="live_status == 'pending'">
+                                                    <t t-if="live_status == 'pending'">
                                                         <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="fa fa-clock-o me-1"/> Pending Verification</span>
                                                     </t>
-                                                    <t t-elif="live_status == 'expired'">
-                                                        <span class="badge bg-danger text-white px-3 py-2 rounded-pill"><i class="fa fa-exclamation-circle me-1"/> Expired</span>
+                                                    <t t-if="live_status == 'expired'">
+                                                        <span class="badge bg-danger text-white px-3 py-2 rounded-pill"><i class="fa fa-exclamation-circle me-1"/> Expired / Ineligible</span>
                                                     </t>
-                                                    <t t-elif="live_status == 'rejected'">
+                                                    <t t-if="live_status == 'rejected'">
                                                         <span class="badge bg-secondary text-white px-3 py-2 rounded-pill"><i class="fa fa-times-circle me-1"/> Rejected</span>
                                                     </t>
-                                                    <t t-else="">
+                                                    <t t-if="live_status == 'not_found'">
                                                         <span class="badge bg-info text-white px-3 py-2 rounded-pill">Registered</span>
                                                     </t>
                                                 </div>
@@ -84,17 +83,45 @@
                                                 <div class="col-sm-7 text-dark fw-semibold"><t t-out="product_name"/></div>
                                             </div>
                                         
-                                            
                                             <div class="row mb-2">
                                                 <div class="col-sm-5 fw-bold text-muted">Warranty Policy:</div>
                                                 <div class="col-sm-7 text-success fw-bold"><t t-out="policy_name"/></div>
                                             </div>
                                             
                                             <t t-if="expiry_date">
-                                                <div class="row">
+                                                <div class="row mb-2">
                                                     <div class="col-sm-5 fw-bold text-muted">Valid Until (Expiry):</div>
                                                     <div class="col-sm-7 text-danger fw-bold"><t t-out="expiry_date"/></div>
                                                 </div>
+                                            </t>
+
+                                            <t t-if="registration and registration.claim_ids">
+                                                <hr class="my-3"/>
+                                                <h6 class="fw-bold text-primary mb-2"><i class="fa fa-list-alt me-1"/> Claim History &amp; Live Backend Stage:</h6>
+                                                <t t-foreach="registration.claim_ids" t-as="claim">
+                                                    <div class="p-2 mb-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong t-out="claim.name"/> 
+                                                            <span class="text-muted small ms-2">(Source: <t t-out="claim.claim_source"/>)</span>
+                                                        </div>
+                                                        <div>
+                                                            <span t-attf-class="badge p-2 text-white #{'bg-info' if claim.state == 'verification' else 'bg-primary' if claim.state == 'inspection' else 'bg-warning text-dark' if claim.state == 'repair' else 'bg-danger' if claim.state == 'rejected' else 'bg-secondary'}">
+                                                                <t t-out="claim.state"/>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div t-if="is_dealer and claim.state == 'repair' and not claim.customer_approved" class="alert alert-warning p-2 mt-1 mb-3">
+                                                        <p class="small mb-2"><strong>Notice:</strong> This service requires extra paid validation/charges. Approve on behalf of user?</p>
+                                                        <form action="/warranty/claim/chargeable_approve" method="post">
+                                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                            <input type="hidden" name="current_token" t-att-value="current_token"/>
+                                                            <input type="hidden" name="claim_id" t-att-value="claim.id"/>
+                                                            <button type="submit" class="btn btn-sm btn-success fw-bold"><i class="fa fa-thumbs-up"/> Approve Chargeable Repair</button>
+                                                        </form>
+                                                    </div>
+                                                    <div t-if="claim.customer_approved" class="text-success small mb-2"><i class="fa fa-check"/> Paid Chargeable Service Approved by Dealer.</div>
+                                                </t>
                                             </t>
                                         </div>
                                     </div>
@@ -103,8 +130,9 @@
                                         <div class="row justify-content-center mt-5">
                                             <div class="col-md-10 text-start border p-4 rounded-3 shadow-sm bg-white">
                                                 <h4 class="fw-bold mb-4 text-primary pb-2 border-bottom">
-                                                    <i class="fa fa-wrench me-2"/>Submit an Online Warranty Claim
+                                                    <i class="fa fa-wrench me-2"/>Submit Portal Warranty Claim
                                                 </h4>
+                                                <div t-if="is_dealer" class="alert alert-info py-2 small"><i class="fa fa-user-circle"/> Dealer Logged-In Mode: Claims auto-tracked under your logged Account.</div>
                                                 
                                                 <form action="/warranty/claim/submit" method="post" enctype="multipart/form-data">
                                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
@@ -161,24 +189,21 @@
                             </t>
 
                             <t t-else="">
-                                    <h2 class="text-center mb-4 text-secondary" style="font-weight: 900; color: #396485df !important;"> Registration For Warranty </h2>
-
-                                  
-                                    <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
-                                        <i class="fa fa-exclamation-triangle mr-2"/> Serial number already registered in our system! Please verify your serial number.
-                                    </div>
-
-                                   
-                                    <div t-if="error == 'pending_registration'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
-                                        <i class="fa fa-clock-o mr-2"/> This serial number is already submitted and pending for approval!
-                                    </div>
-
+                                <h2 class="text-center mb-4 text-secondary" style="font-weight: 900; color: #396485df !important;"> Registration For Warranty </h2>
+                              
+                                <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
+                                    <i class="fa fa-exclamation-triangle me-2"/> Serial number already registered in our system! Please verify your serial number.
+                                </div>
+                               
+                                <div t-if="error == 'pending_registration'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                    <i class="fa fa-clock-o me-2"/> This serial number is already submitted and pending for approval!
+                                </div>
                             
-                                    <div t-if="error == 'invalid_data'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
-                                        <i class="fa fa-info-circle mr-2"/> Submission failed. Please ensure all data is correct.
-                                    </div>
+                                <div t-if="error == 'invalid_data'" class="alert alert-warning text-center shadow-sm rounded-3 mb-4" role="alert">
+                                    <i class="fa fa-info-circle me-2"/> Submission failed. Please ensure all data is correct.
+                                </div>
 
-                                    <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
+                                <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                     <input type="hidden" name="current_token" t-att-value="current_token"/>
                                     
@@ -195,47 +220,12 @@
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_email">Email Address</label>
                                             <input type="email" class="form-control form-control-lg bg-light border-0" name="customer_email" required="1"/>
                                         </div>
-
-                                        <div class="row">
-                                            <div class="form-group col-md-6 mb-3">
-                                                <label class="fw-bold text-muted small uppercase mb-1">Product Name</label>
-                                                <input type="text" class="form-control form-control-lg bg-light border-0" 
-                                                    t-att-value="product_name" readonly="1"/>
-                                            </div>
-                                            <div class="form-group col-md-6 mb-3">
-                                                <label class="fw-bold text-muted small uppercase mb-1" for="serial_no">Product Serial Number</label>
-                                                <input type="text" class="form-control form-control-lg bg-light border-0" 
-                                                    name="serial_no" t-att-value="token_serial_no" readonly="1" required="1"/>
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group col-md-6 mb-3">
-                                            <label class="fw-bold text-muted small uppercase mb-1" for="purchase_date">Purchase Date</label>
-                                            <input type="date" class="form-control form-control-lg bg-light border-0" name="purchase_date" required="1"/>
-                                        </div>
-                                        <div class="form-group col-md-6 mb-3">
-                                            <label class="fw-bold text-muted small uppercase mb-1" for="dealer_id">Dealer/Store</label>
-                                            <select name="dealer_id" class="form-select form-control-lg bg-light border-0">
-                                                <t t-foreach="dealers" t-as="dealer">
-                                                    <option t-att-value="dealer.id"><t t-esc="dealer.name"/></option>
-                                                </t>
-                                            </select>
-                                        </div>
-
-                                        <div class="form-group col-12 mb-4">
-                                            <label class="fw-bold text-muted small uppercase mb-1" for="invoice_proof">Upload Invoice/Photo</label>
-                                            <input type="file" class="form-control form-control-lg bg-light border-0" name="invoice_proof" accept="image/*,application/pdf" required="1"/>
-                                        </div>
-
-                                        <div class="form-group col-12 text-center mt-3">
-                                            <button type="submit" class="btn btn-primary btn-lg rounded-3 px-5 py-3 fw-bold shadow-sm" style="font-size: 16px;">
-                                                Submit Registration
-                                            </button>
-                                        </div>
+                                    </div>
+                                    <div class="text-end mt-3">
+                                        <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3">Register Warranty</button>
                                     </div>
                                 </form>
                             </t>
-                            
                         </div>
                     </div>
                 </div>
@@ -243,20 +233,181 @@
         </t>
     </template>
 
-    <template id="registration_success_page" name="Success">
+    <template id="service_center_claims_list_template" name="Service Center Claims Dashboard">
         <t t-call="website.layout">
-            <div class="container mt-5 mb-5">
-                <div class="row justify-content-center">
-                    <div class="col-lg-6 card shadow p-5 text-center border-0 rounded-3">
-                        <div class="mb-4">
-                            <i class="fa fa-check-circle text-success" style="font-size: 80px;"/>
+            <div class="container mt-4 mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fa fa-wrench text-primary me-2"/>Service Center Claims Dashboard</h2>
+                    <span class="badge bg-primary px-3 py-2 text-white"><t t-out="request.env.user.service_center_id.name"/></span>
+                </div>
+
+                <div t-if="request.params.get('success')" class="alert alert-success">
+                    Action processed successfully!
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Claim ID</th>
+                                    <th>Customer / Serial</th>
+                                    <th>Category</th>
+                                    <th>SLA Status</th>
+                                    <th>Stage</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="claims" t-as="claim">
+                                    <tr>
+                                        <td><strong t-out="claim.name"/></td>
+                                        <td>
+                                            <div class="fw-bold" t-out="claim.registration_id.customer_name"/>
+                                            <small class="text-muted">SN: <t t-out="claim.registration_id.serial_no"/></small>
+                                        </td>
+                                        <td><span class="badge bg-secondary text-capitalize" t-out="claim.issue_category"/></td>
+                                        <td>
+                                            <t t-if="claim.sla_deadline">
+                                                <t t-if="claim.sla_deadline &lt; datetime.date.today()">
+                                                    <span class="badge bg-danger text-white border-0"><i class="fa fa-exclamation-triangle"/> SLA Breached</span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="badge bg-success text-white" t-out="claim.sla_deadline"/>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-muted small">No SLA Defined</span>
+                                            </t>
+                                        </td>
+                                        <td>
+                                            <span t-attf-class="badge #{claim.state == 'repair' and 'bg-warning text-dark' or claim.state == 'resolved' and 'bg-success' or claim.state == 'rejected' and 'bg-danger' or 'bg-info text-white'}" t-out="claim.state"/>
+                                        </td>
+                                        <td class="text-center">
+                                            <a t-attf-href="/my/service-center/claim/#{claim.id}" class="btn btn-sm btn-outline-primary fw-bold">Manage Claim</a>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <tr t-if="not claims">
+                                    <td colspan="6" class="text-center text-muted py-4">No claims assigned to your service center.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="service_center_claim_detail_template" name="Manage Assigned Claim">
+        <t t-call="website.layout">
+            <div class="container mt-4 mb-5">
+                <a href="/my/service-center/claims" class="btn btn-sm btn-secondary mb-3"><i class="fa fa-arrow-left"/> Back to Dashboard</a>
+                
+                <div t-if="error == 'missing_reason'" class="alert alert-danger">Rejection reason is required!</div>
+                <div t-if="success" class="alert alert-success">Claim updated successfully!</div>
+
+                <div class="row">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card shadow-sm border-0 p-4 mb-4">
+                            <h4 class="fw-bold border-bottom pb-2 mb-3 text-dark"><i class="fa fa-info-circle me-1 text-primary"/>Claim Info: <span t-out="claim.name"/></h4>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 text-muted fw-bold">Customer:</div>
+                                <div class="col-sm-8 text-dark" t-out="claim.registration_id.customer_name"/>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 text-muted fw-bold">Serial No:</div>
+                                <div class="col-sm-8 text-success fw-bold" t-out="claim.registration_id.serial_no"/>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 text-muted fw-bold">Issue Summary:</div>
+                                <div class="col-sm-8 text-muted" t-out="claim.description"/>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-4 text-muted fw-bold">Warranty Status:</div>
+                                <div class="col-sm-8">
+                                    <span t-attf-class="badge #{claim.is_covered and 'bg-success' or 'bg-danger'}" t-out="claim.is_covered and 'Covered under Warranty' or 'Chargeable Service'"/>
+                                </div>
+                            </div>
                         </div>
-                        <h2 class="text-success mb-3 fw-bold">Registration Successful!</h2>
-                        <p class="lead text-muted" style="font-size: 16px;">
-                            Thank you! Your warranty registration request has been received. We will verify your information and update you soon.
-                        </p>
-                        <hr class="my-4 opacity-25"/>
-                        <a href="/" class="btn btn-primary btn-lg rounded-pill px-5" style="font-size: 15px; font-weight: 600;">Back to Home Page</a>
+
+                        <div class="card shadow-sm border-0 p-4">
+                            <h4 class="fw-bold border-bottom pb-2 mb-3 text-dark">Live Diagnosis &amp; Inspection</h4>
+                            <form action="/my/service-center/claim/update_inspection" method="post">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="claim_id" t-att-value="claim.id"/>
+
+                                <div class="mb-3">
+                                    <label class="fw-bold mb-1 small text-muted">Diagnosis Report (Text)</label>
+                                    <textarea name="diagnosis" class="form-control" rows="3" placeholder="Enter findings..." required="1"><t t-out="claim.diagnosis"/></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="fw-bold mb-1 small text-muted">Inspection Result</label>
+                                        <select name="inspection_result" class="form-select">
+                                            <option value="passed" t-att-selected="claim.inspection_result == 'passed'">Passed / Repairable</option>
+                                            <option value="failed" t-att-selected="claim.inspection_result == 'failed'">Failed Criteria</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="fw-bold mb-1 small text-muted">Is Covered under Warranty?</label>
+                                        <select name="is_covered" class="form-select">
+                                            <option value="1" t-att-selected="claim.is_covered">Yes, Free Repair</option>
+                                            <option value="0" t-att-selected="not claim.is_covered">No, Chargeable</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">Save Diagnosis Logs</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm border-0 p-4 mb-4" t-if="claim.state in ['inspection', 'repair', 'submitted']">
+                            <h4 class="fw-bold border-bottom pb-2 mb-3 text-dark"><i class="fa fa-cogs me-1 text-primary"/>Repair Worksheet (Parts &amp; Labor)</h4>
+                            
+                            <div t-if="claim.part_ids or claim.labor_ids" class="mb-3">
+                                <h6 class="fw-bold text-dark mb-1">Current Dynamic Lines:</h6>
+                                <t t-foreach="claim.part_ids" t-as="p_line">
+                                    <div class="small text-muted"><i class="fa fa-cube"/> <t t-out="p_line.product_id.name"/> x <t t-out="p_line.quantity"/></div>
+                                </t>
+                                <t t-foreach="claim.labor_ids" t-as="l_line">
+                                    <div class="small text-muted"><i class="fa fa-wrench"/> <t t-out="l_line.description"/> - <t t-out="l_line.labor_cost"/> BDT</div>
+                                </t>
+                            </div>
+
+                            <form action="/my/service-center/claim/add_lines" method="post" id="repair_worksheet_form">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="claim_id" t-att-value="claim.id"/>
+
+                                <h6 class="fw-bold text-muted small">Add Used Material/Parts:</h6>
+                                <table class="table table-bordered table-sm mb-2" id="parts_table">
+                                    <thead>
+                                        <tr class="table-light small">
+                                            <th>Select Product Part</th>
+                                            <th style="width: 100px;">Qty</th>
+                                            <th style="width: 50px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        </tbody>
+                                </table>
+                                <button type="button" class="btn btn-xs btn-outline-success mb-3 font-weight-bold" id="add_part_row_btn"><i class="fa fa-plus"/> Add Part Row</button>
+
+                                <h6 class="fw-bold text-muted small">Add Labor Activity Costs:</h6>
+                                <table class="table table-bordered table-sm mb-2" id="labor_table">
+                                    <thead>
+                                        <tr class="table-light small">
+                                            <th>Task Description</th>
+                                            <th style="width: 120px;">Cost (Est)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        </tbody>
+                                </table>
+                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">Update Worksheet Lines</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

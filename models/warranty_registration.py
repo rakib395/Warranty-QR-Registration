@@ -13,6 +13,12 @@ class WarrantyRegistration(models.Model):
 
     event_log_ids = fields.One2many('ms.warranty.event.log', 'registration_id', string='Extension & Event History', readonly=True)
     invoice_name = fields.Char(string="Invoice File Name")
+
+    claim_ids = fields.One2many(
+        'ms.warranty.claim', 
+        'registration_id', 
+        string='Warranty Claims'
+    )
     
     # Customer Details
     customer_name = fields.Char(string='Customer Name', required=True, tracking=True)
