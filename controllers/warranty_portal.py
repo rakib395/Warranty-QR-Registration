@@ -25,9 +25,6 @@ class WarrantyPublic(http.Controller):
         if qr_token.state == 'used' and not error_status:
             error_status = 'already_registered'
 
-        if qr_token.state == 'used' and qr_token.use_count == 0:
-            qr_token.sudo().write({'use_count': 1})
-
         registration = False
         is_dealer_registered = False
         
@@ -92,6 +89,7 @@ class WarrantyPublic(http.Controller):
 
     @http.route(['/warranty/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty(self, **post):
+        _logger.info("RECEIVED POST DATA: %s", post)
         token_str = post.get('current_token')
         if not token_str:
             return request.redirect('/')
@@ -132,9 +130,16 @@ class WarrantyPublic(http.Controller):
         if not product_product_id:
             qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
             if qr_token and qr_token.product_id:
-                product_product_id = qr_token.product_id.id
+                if qr_token.product_id._name == 'product.template':
+                    product_product = request.env['product.product'].sudo().search([
+                        ('product_tmpl_id', '=', qr_token.product_id.id)
+                    ], limit=1)
+                    product_product_id = product_product.id if product_product else qr_token.product_id.product_variant_id.id
+                else:
+                    product_product_id = qr_token.product_id.id
 
         if not product_product_id:
+            _logger.error("Warranty submission failed: product_product_id could not be resolved.")
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
 
         product_product_obj = request.env['product.product'].sudo().browse(product_product_id)
@@ -146,7 +151,7 @@ class WarrantyPublic(http.Controller):
 
         invoice_file = post.get('invoice_proof')
         invoice_data = False
-        # SAFE BUFFER STREAM CHECK
+       
         if invoice_file and hasattr(invoice_file, 'read'):
             read_data = invoice_file.read()
             if read_data:
@@ -158,7 +163,7 @@ class WarrantyPublic(http.Controller):
             'customer_email': post.get('customer_email'),
             'product_id': product_product_id,
             'serial_no': serial_no, 
-            'purchase_date': post.get('purchase_date'),
+            'purchase_date': post.get('purchase_date') or date.today(),
             'dealer_id': int(post.get('dealer_id')) if post.get('dealer_id') else False,
             'invoice_proof': invoice_data,
             'state': target_state,
@@ -178,11 +183,10 @@ class WarrantyPublic(http.Controller):
             _logger.error("Warranty registration validation error: %s", str(ve))
             return request.redirect(f'/warranty/registration?token={token_str}&error=duplicate_serial')
         except Exception as e:
-            _logger.error("Warranty registration creation failed: %s", str(e))
+            _logger.error("Warranty registration creation failed directly at database level: %s", str(e))
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
 
         return request.render("ms_warranty_qr_claim_portal.registration_success_page")
-
     @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty_claim(self, **post):
         token_str = post.get('current_token')

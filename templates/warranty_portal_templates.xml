@@ -188,7 +188,7 @@
                                 </div>
                             </t>
 
-                            <t t-else="">
+                            <t t-if="not (error == 'already_registered' or token_state == 'used')">
                                 <h2 class="text-center mb-4 text-secondary" style="font-weight: 900; color: #396485df !important;"> Registration For Warranty </h2>
                               
                                 <div t-if="error == 'duplicate_serial'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
@@ -206,21 +206,47 @@
                                 <form action="/warranty/submit" method="post" enctype="multipart/form-data" class="mt-4">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                     <input type="hidden" name="current_token" t-att-value="current_token"/>
+                                    <input type="hidden" name="product_id" t-att-value="token_product_id"/>
+                                    <input type="hidden" name="serial_no" t-att-value="token_serial_no"/>
                                     
                                     <div class="row">
                                         <div class="form-group col-12 mb-3">
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_name">Full Name</label>
-                                            <input type="text" class="form-control form-control-lg bg-light border-0" name="customer_name" required="1"/>
+                                            <input type="text" class="form-control form-control-lg bg-light border-0" name="customer_name" required="1" t-att-value="customer_name"/>
                                         </div>
+                                    
                                         <div class="form-group col-md-6 mb-3">
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_phone">Phone Number</label>
-                                            <input type="tel" class="form-control form-control-lg bg-light border-0" name="customer_phone" required="1"/>
+                                            <input type="tel" class="form-control form-control-lg bg-light border-0" name="customer_phone" required="1" t-att-value="customer_phone"/>
                                         </div>
+                                    
                                         <div class="form-group col-md-6 mb-3">
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_email">Email Address</label>
-                                            <input type="email" class="form-control form-control-lg bg-light border-0" name="customer_email" required="1"/>
+                                            <input type="email" class="form-control form-control-lg bg-light border-0" name="customer_email" required="1" t-att-value="customer_email"/>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="purchase_date">Purchase Date</label>
+                                            <input type="date" class="form-control form-control-lg bg-light border-0" name="purchase_date" required="1"/>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                            
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="dealer_id">Dealer / Store</label>
+                                            <select class="form-control form-control-lg bg-light border-0" name="dealer_id">
+                                                <option value="">Select Store/Dealer...</option>
+                                                <t t-foreach="dealers" t-as="dealer">
+                                                    <option t-att-value="dealer.id"><t t-esc="dealer.name"/></option>
+                                                </t>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group col-12 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1" for="invoice_proof">Upload Invoice Proof (Photo/PDF)</label>
+                                            <input type="file" class="form-control form-control-lg bg-light border-0" name="invoice_proof" accept="image/*,application/pdf"/>
                                         </div>
                                     </div>
+                                    
                                     <div class="text-end mt-3">
                                         <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3">Register Warranty</button>
                                     </div>
@@ -270,7 +296,9 @@
                                         <td>
                                             <t t-if="claim.sla_deadline">
                                                 <t t-if="claim.sla_deadline &lt; datetime.date.today()">
-                                                    <span class="badge bg-danger text-white border-0"><i class="fa fa-exclamation-triangle"/> SLA Breached</span>
+                                                    <span class="badge bg-danger text-white border-0">
+                                                        <i class="fa fa-exclamation-triangle"/> SLA Breached
+                                                    </span>
                                                 </t>
                                                 <t t-else="">
                                                     <span class="badge bg-success text-white" t-out="claim.sla_deadline"/>
@@ -392,21 +420,29 @@
                                     <tbody>
                                         </tbody>
                                 </table>
-                                <button type="button" class="btn btn-xs btn-outline-success mb-3 font-weight-bold" id="add_part_row_btn"><i class="fa fa-plus"/> Add Part Row</button>
-
-                                <h6 class="fw-bold text-muted small">Add Labor Activity Costs:</h6>
-                                <table class="table table-bordered table-sm mb-2" id="labor_table">
-                                    <thead>
-                                        <tr class="table-light small">
-                                            <th>Task Description</th>
-                                            <th style="width: 120px;">Cost (Est)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        </tbody>
-                                </table>
-                                <button type="submit" class="btn btn-success btn-sm w-100 fw-bold">Update Worksheet Lines</button>
+                                <button type="button" class="btn btn-xs btn-outline-success mb-3 font-weight-bold" id="add_part_row_btn">
+                                    <i class="fa fa-plus"/> Add Part
+                                </button>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="registration_success_page" name="Warranty Registration Success">
+        <t t-call="website.layout">
+            <div class="container mt-5 mb-5 text-center">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 card shadow p-5 border-0 rounded-3">
+                        <div class="text-success mb-4">
+                            <i class="fa fa-check-circle fa-5x"></i>
+                        </div>
+                        <h2 class="fw-bold text-dark mb-3">Registration Successful!</h2>
+                        <p class="text-muted">Thank you! Your warranty registration request has been submitted successfully.</p>
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary px-4 py-2 rounded-3 fw-bold">Go Back Home</a>
                         </div>
                     </div>
                 </div>
