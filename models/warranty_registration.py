@@ -21,6 +21,7 @@ class WarrantyRegistration(models.Model):
     )
     
     # Customer Details
+    partner_id = fields.Many2one('res.partner', string='Customer Link', tracking=True) # <- এই লাইনটি যোগ করুন
     customer_name = fields.Char(string='Customer Name', required=True, tracking=True)
     customer_phone = fields.Char(string='Phone', required=True, tracking=True)
     customer_email = fields.Char(string='Email', tracking=True)

@@ -26,8 +26,8 @@
         'security/record_rules.xml',
         
         'data/sequence.xml',
-        # 'data/mail_activity_type.xml',
-        # 'data/mail_template.xml',
+        'data/mail_activity_type.xml',
+        'data/mail_template.xml',
         # 'data/warranty_claim_stage_data.xml',
         # 'data/warranty_issue_type_data.xml',
         # 'data/warranty_resolution_data.xml',

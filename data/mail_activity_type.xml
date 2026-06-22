@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_activity_type_claim_inspection" model="mail.activity.type">
+        <field name="name">Claim Physical Inspection</field>
+        <field name="icon">fa-search</field>
+        <field name="res_model">ms.warranty.claim</field>
+        <field name="delay_count">2</field>
+        <field name="delay_unit">days</field>
+        <field name="summary">Inspect the physical device or fault details</field>
+    </record>
+
+    <record id="mail_activity_type_claim_repair" model="mail.activity.type">
+        <field name="name">Execute Product Repair</field>
+        <field name="icon">fa-wrench</field>
+        <field name="res_model">ms.warranty.claim</field>
+        <field name="delay_count">5</field>
+        <field name="delay_unit">days</field>
+        <field name="summary">Perform technical repair or replacement execution</field>
+    </record>
+</odoo>

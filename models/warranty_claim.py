@@ -75,18 +75,35 @@ class WarrantyClaim(models.Model):
     ], string='Fraud Risk Level', compute='_compute_fraud_analysis', store=True, default='low', tracking=True)
     fraud_warning_notes = fields.Text(string='Fraud System Detection Logs', compute='_compute_fraud_analysis', store=True)
 
+    partner_id = fields.Many2one('res.partner', string='Customer', related='registration_id.partner_id', store=True, index=True)
+    customer_phone = fields.Char(string='Customer Phone', related='registration_id.customer_phone', store=True)
     dealer_id = fields.Many2one('res.partner', string='Dealer/Store', related='registration_id.dealer_id', store=True, index=True)
     product_id = fields.Many2one('product.product', string='Product', related='registration_id.product_id', store=True, index=True)
     total_claim_cost = fields.Float(string='Total Claim Cost', compute='_compute_total_claim_cost', store=True, tracking=True)
 
-    # Portal Tracking Fields
     claim_source = fields.Selection([
         ('public', 'Public Portal/Customer'),
         ('dealer', 'Dealer Portal')
     ], string='Claim Source', default='public', required=True, tracking=True)
     
     submitted_by_id = fields.Many2one('res.users', string='Submitted By (User)', default=lambda self: self.env.user, index=True, tracking=True)
-    customer_approved = fields.Boolean(string='Charge Approved by Customer', default=False, tracking=True, help="Dealer can approve estimated repair costs from portal on behalf of the customer.")
+    customer_approved = fields.Boolean(string='Charge Approved by Customer', default=False, tracking=True)
+
+    def _send_warranty_sms_notification(self, message_text):
+        """Helper method to fire SMS standard gateway"""
+        self.ensure_one()
+        phone = self.customer_phone or self.preferred_contact
+        if not phone:
+            return False
+        
+        try:
+            self.env['sms.api']._send_sms(
+                numbers=[phone],
+                message=message_text
+            )
+            self.message_post(body=_("SMS Notification Sent successfully to %s") % phone, message_type='notification')
+        except Exception as e:
+            self.message_post(body=_("Failed to send SMS: %s") % str(e), message_type='notification')
 
     @api.depends('part_lines.subtotal', 'labor_lines.subtotal', 'refund_amount', 'resolution_type')
     def _compute_total_claim_cost(self):
@@ -166,9 +183,14 @@ class WarrantyClaim(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('ms.warranty.claim') or _('New')
-        return super(WarrantyClaim, self).create(vals_list)
+        records = super(WarrantyClaim, self).create(vals_list)
+        
+        for rec in records:
+            msg = _("Hello! Your warranty claim %s has been successfully submitted. We are processing your request. - Mindsynth") % rec.name
+            rec._send_warranty_sms_notification(msg)
+            
+        return records
 
-   
     def action_inspect(self):
         """Move the claim to the inspection or review state"""
         self.ensure_one()
@@ -177,6 +199,9 @@ class WarrantyClaim(models.Model):
             'inspection_result': 'Product received and under initial inspection.'
         })
         self.message_post(body=_("Claim status updated to 'Under Review' for technical inspection."))
+        
+        msg = _("Update: Your warranty claim %s is now under technical review. - Mindsynth") % self.name
+        self._send_warranty_sms_notification(msg)
 
     def action_under_review(self):
         self.ensure_one()
@@ -192,6 +217,9 @@ class WarrantyClaim(models.Model):
             body=_("Dear Customer, Your warranty claim %s has been Approved. Our service center will process it shortly.") % self.name,
             subtype_xmlid="mail.mt_comment"
         )
+    
+        msg = _("Good News! Your warranty claim %s has been Approved. Our team will contact you shortly for fulfillment. - Mindsynth") % self.name
+        self._send_warranty_sms_notification(msg)
 
     def action_repair(self):
         """Initiate the repairing process track"""
@@ -215,6 +243,9 @@ class WarrantyClaim(models.Model):
             self.action_approve_refund()
         else:
             self.write({'state': 'resolved'})
+            
+        msg = _("Dear Customer, Your warranty claim %s has been successfully resolved. Thank you for staying with us! - Mindsynth") % self.name
+        self._send_warranty_sms_notification(msg)
 
     def action_reject(self):
         """Reject the warranty claim"""
@@ -223,6 +254,9 @@ class WarrantyClaim(models.Model):
             self.rejection_reason = "Claim rejected after technical review/inspection."
         self.write({'state': 'rejected'})
         self.message_post(body=_("Warranty claim has been rejected. Reason: %s") % self.rejection_reason)
+  
+        msg = _("Alert: Your warranty claim %s has been rejected. Reason: %s. Please contact support. - Mindsynth") % (self.name, self.rejection_reason)
+        self._send_warranty_sms_notification(msg)
 
     def action_convert_chargeable(self):
         self.action_convert_to_chargeable()
@@ -397,6 +431,9 @@ class WarrantyClaim(models.Model):
             body=_("Claim status updated: Marked as <b>Chargeable Paid Service</b>.<br/>" + chatter_msg),
             subtype_xmlid="mail.mt_comment"
         )
+        
+        msg = _("Your claim %s has been marked as Chargeable. Estimated Amount: %s. Reason: %s. Please approve to proceed. - Mindsynth") % (self.name, self.estimated_charge_amount, self.charge_reason)
+        self._send_warranty_sms_notification(msg)
 
     @api.model
     def _cron_check_sla_breach(self):

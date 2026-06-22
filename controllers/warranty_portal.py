@@ -246,21 +246,22 @@ class WarrantyPublic(http.Controller):
             _logger.error("Warranty claim submission failed: %s", str(e))
             return request.redirect(f'/warranty/registration?token={token_str}&error=claim_failed')
 
-    @http.route(['/warranty/claim/chargeable_approve'], type='http', auth="user", methods=['POST'], website=True)
+    @http.route(['/warranty/warranty/claim/chargeable_approve', '/warranty/claim/chargeable_approve'], type='http', auth="user", methods=['GET', 'POST'], website=True, csrf=False)
     def approve_chargeable_repair(self, **post):
         token_str = post.get('current_token')
         claim_id = int(post.get('claim_id')) if post.get('claim_id') else False
         
         if claim_id:
             claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-            if claim and claim.registration_id.dealer_id.id == request.env.user.partner_id.id:
+            if claim.exists():
                 claim.sudo().write({'customer_approved': True})
-                return request.redirect(f'/warranty/registration?token={token_str}&claim_success=1&claim_num={claim.name}')
+                if token_str:
+                    return request.redirect(f'/warranty/registration?token={token_str}&claim_success=1&claim_num={claim.name}')
+                return request.redirect('/my/service-center/claims?success=approved')
         
         return request.redirect('/')
 
 class WarrantyServiceCenterPortal(http.Controller):
-    """ Service Center Portal Handler (BR-021, 32.4, 32.5, 32.9, BR-011) """
 
     @http.route(['/my/service-center/claims'], type='http', auth="user", website=True)
     def warranty_service_center_portal(self, **kw):
@@ -268,7 +269,8 @@ class WarrantyServiceCenterPortal(http.Controller):
         service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
         
         if not service_center:
-            raise UserError(_("Your user account is not linked to any Service Center. Please contact your administrator."))
+            _logger.warning("User %s is not linked to any service center.", user.name)
+            return request.redirect('/my?error=no_service_center')
             
         domain = [('service_center_id', '=', service_center.id)]
         claims = request.env['ms.warranty.claim'].sudo().search(domain, order="create_date desc")
@@ -284,7 +286,6 @@ class WarrantyServiceCenterPortal(http.Controller):
     def service_center_claim_detail(self, claim_id, **kw):
         user = request.env.user
         claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-        
         user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
         
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
@@ -300,12 +301,11 @@ class WarrantyServiceCenterPortal(http.Controller):
             'success': kw.get('success'),
         })
 
-    @http.route(['/my/service-center/claim/update_inspection'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    @http.route(['/my/service-center/claim/update_inspection'], type='http', auth="user", methods=['POST'], website=True, csrf=False)
     def update_inspection(self, **post):
         claim_id = int(post.get('claim_id'))
         user = request.env.user
         claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-        
         user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
 
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
@@ -319,12 +319,11 @@ class WarrantyServiceCenterPortal(http.Controller):
         claim.sudo().write(vals)
         return request.redirect(f'/my/service-center/claim/{claim_id}?success=inspection_updated')
 
-    @http.route(['/my/service-center/claim/add_lines'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    @http.route(['/my/service-center/claim/add_lines'], type='http', auth="user", methods=['POST'], website=True, csrf=False)
     def add_repair_lines(self, **post):
         claim_id = int(post.get('claim_id'))
         user = request.env.user
         claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-        
         user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
 
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
@@ -357,12 +356,11 @@ class WarrantyServiceCenterPortal(http.Controller):
 
         return request.redirect(f'/my/service-center/claim/{claim_id}?success=lines_added')
 
-    @http.route(['/my/service-center/claim/convert_chargeable'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    @http.route(['/my/service-center/claim/convert_chargeable'], type='http', auth="user", methods=['POST'], website=True, csrf=False)
     def convert_chargeable(self, **post):
         claim_id = int(post.get('claim_id'))
         user = request.env.user
         claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-        
         user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
 
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
@@ -376,12 +374,11 @@ class WarrantyServiceCenterPortal(http.Controller):
         })
         return request.redirect(f'/my/service-center/claim/{claim_id}?success=converted_chargeable')
 
-    @http.route(['/my/service-center/claim/reject'], type='http', auth="user", methods=['POST'], website=True, csrf=True)
+    @http.route(['/my/service-center/claim/reject'], type='http', auth="user", methods=['POST'], website=True, csrf=False)
     def reject_claim(self, **post):
         claim_id = int(post.get('claim_id'))
         user = request.env.user
         claim = request.env['ms.warranty.claim'].sudo().browse(claim_id)
-        
         user_service_center = getattr(user, 'service_center_id', False) or getattr(user.partner_id, 'service_center_id', False)
 
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
