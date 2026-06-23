@@ -16,7 +16,6 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
-
     <record id="ms_warranty_registration_dealer_rule" model="ir.rule">
         <field name="name">Dealer: See Only Owned Product Registrations</field>
         <field name="model_id" ref="model_ms_warranty_registration"/>
@@ -60,4 +59,26 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
+    <record id="ms_warranty_policy_multi_company_rule" model="ir.rule">
+        <field name="name">Warranty Policy: Multi-Company Rule</field>
+        <field name="model_id" ref="model_ms_warranty_policy"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="ms_warranty_registration_multi_company_rule" model="ir.rule">
+        <field name="name">Warranty Registration: Multi-Company Rule</field>
+        <field name="model_id" ref="model_ms_warranty_registration"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="ms_warranty_claim_multi_company_rule" model="ir.rule">
+        <field name="name">Warranty Claim: Multi-Company Rule</field>
+        <field name="model_id" ref="model_ms_warranty_claim"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>
+

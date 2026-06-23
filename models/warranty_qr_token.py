@@ -16,6 +16,13 @@ class WarrantyQRToken(models.Model):
     product_id = fields.Many2one('product.product', string='Product')
     serial_no = fields.Char( string='Serial Number', copy=False)
     registration_id = fields.Many2one('ms.warranty.registration', string='Linked Registration')
+
+    company_id = fields.Many2one(
+    'res.company', 
+    string='Company', 
+    required=True, 
+    default=lambda self: self.env.company
+)
     
     purpose = fields.Selection([
         ('registration', 'Registration'),
@@ -105,6 +112,9 @@ class WarrantyQRToken(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if 'company_id' not in vals or not vals.get('company_id'):
+                vals['company_id'] = self.env.company.id
         return super().create(vals_list)
     
     @api.onchange('product_id')

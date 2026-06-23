@@ -13,6 +13,15 @@ class WarrantyClaim(models.Model):
     registration_id = fields.Many2one('ms.warranty.registration', string='Warranty Registration', required=True, ondelete='cascade')
 
     policy_id = fields.Many2one('ms.warranty.policy', string='Warranty Policy', related='registration_id.policy_id', store=True, index=True)
+
+    company_id = fields.Many2one(
+        'res.company', 
+        string='Company', 
+        related='registration_id.company_id', 
+        store=True, 
+        index=True, 
+        default=lambda self: self.env.company
+    )
     
     issue_category = fields.Selection([
         ('hardware', 'Hardware Failure'),

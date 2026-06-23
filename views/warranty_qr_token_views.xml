@@ -25,6 +25,7 @@
                             <field name="name" readonly="1" placeholder="New"/>
                             <field name="purpose"/>
                             <field name="product_id"/>
+                            <field name="company_id" invisible="1"/>
                             <field name="serial_no"/>
                         </group>
                         <group>

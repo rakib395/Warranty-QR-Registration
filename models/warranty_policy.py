@@ -11,7 +11,23 @@ class WarrantyPolicy(models.Model):
     name = fields.Char(string='Policy Name', required=True, tracking=True)
     code = fields.Char(string='Policy Code', required=True, copy=False, tracking=True)
     active = fields.Boolean(default=True, tracking=True)
-    company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.company)
+
+
+    company_id = fields.Many2one(
+        'res.company', 
+        string='Company/Brand', 
+        required=True, 
+        index=True, 
+        default=lambda self: self.env.company
+    )
+    parent_policy_id = fields.Many2one(
+        'ms.warranty.policy', 
+        string='Inherit From Parent Policy',
+        tracking=True,
+        domain="[('company_id', '!=', company_id)]",
+        help="Select a global or parent company policy to inherit fields from."
+    )
+
     description = fields.Text(string='Customer Policy Summary')
     internal_note = fields.Text(string='Internal Instruction')
 
@@ -60,6 +76,23 @@ class WarrantyPolicy(models.Model):
     claim_count = fields.Integer(compute='_compute_counts', string="Claims")
 
 
+    @api.onchange('parent_policy_id')
+    def _onchange_parent_policy_id(self):
+        if self.parent_policy_id:
+            parent = self.parent_policy_id
+            self.warranty_duration_value = parent.warranty_duration_value
+            self.warranty_duration_unit = parent.warranty_duration_unit
+            self.warranty_start_basis = parent.warranty_start_basis
+            self.registration_required = parent.registration_required
+            self.auto_approve_registration = parent.auto_approve_registration
+            self.registration_deadline_days = parent.registration_deadline_days
+            self.allow_late_registration = parent.allow_late_registration
+            self.serial_required = parent.serial_required
+            self.invoice_required = parent.invoice_required
+            self.dealer_required = parent.dealer_required
+            self.max_claim_count = parent.max_claim_count
+            self.allow_transfer = parent.allow_transfer
+
     def _compute_counts(self):
         for record in self:
             record.registration_count = self.env['ms.warranty.registration'].search_count([('policy_id', '=', record.id)]) if 'ms.warranty.registration' in self.env else 0
@@ -74,7 +107,7 @@ class WarrantyPolicy(models.Model):
                 raise ValidationError(_("Warranty duration number must be a positive integer."))
 
     _sql_constraints = [
-        ('unique_policy_code', 'unique(code)', 'The policy code must be unique.')
+    ('name_uniq', 'unique(name)', 'The policy name must be unique!')
     ]
 
 
@@ -85,7 +118,7 @@ class WarrantyPolicy(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'ms.warranty.registration',
             'view_mode': 'list,form',
-            'view_type': 'form',  # ওডু ১৯ সাপোর্টের জন্য
+            'view_type': 'form', 
             'domain': [('policy_id', '=', self.id)],
             'context': {'default_policy_id': self.id},
             'target': 'current',

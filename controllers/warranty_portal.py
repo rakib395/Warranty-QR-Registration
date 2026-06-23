@@ -115,6 +115,8 @@ class WarrantyPublic(http.Controller):
         template_id = int(post.get('product_id')) if post.get('product_id') else False
         product_product_id = False
 
+        qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
+
         if template_id:
             product_product = request.env['product.product'].sudo().search([
                 ('product_tmpl_id', '=', template_id)
@@ -157,6 +159,8 @@ class WarrantyPublic(http.Controller):
             if read_data:
                 invoice_data = base64.b64encode(read_data)
 
+        company_id = qr_token.company_id.id if qr_token and getattr(qr_token, 'company_id', False) else request.env.company.id
+
         vals = {
             'customer_name': post.get('customer_name'),
             'customer_phone': post.get('customer_phone'),
@@ -168,6 +172,7 @@ class WarrantyPublic(http.Controller):
             'invoice_proof': invoice_data,
             'state': target_state,
             'policy_id': policy.id if policy else False,
+            'company_id': company_id,
         }
 
         try:
@@ -227,6 +232,8 @@ class WarrantyPublic(http.Controller):
         source_val = 'dealer' if is_dealer else 'public'
         submitted_by_val = current_user.id if is_dealer else False
 
+        claim_company_id = registration.company_id.id if registration.company_id else request.env.company.id
+
         vals = {
             'registration_id': registration.id,
             'issue_category': post.get('issue_category', 'hardware'),
@@ -236,7 +243,8 @@ class WarrantyPublic(http.Controller):
             'invoice_proof': invoice_data,
             'state': 'submitted',
             'claim_source': source_val,                                        
-            'submitted_by_id': submitted_by_val,          
+            'submitted_by_id': submitted_by_val,
+            'company_id': claim_company_id,          
         }
 
         try:
