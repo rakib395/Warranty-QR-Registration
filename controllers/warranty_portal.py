@@ -4,6 +4,7 @@ import logging
 from datetime import date
 from odoo import http, _
 from odoo.http import request
+from odoo.http import request, content_disposition
 from odoo.exceptions import ValidationError, UserError
 _logger = logging.getLogger(__name__)
 
@@ -30,13 +31,13 @@ class WarrantyPublic(http.Controller):
         
         if qr_token.state == 'used' and qr_token.serial_no:
             registration = request.env['ms.warranty.registration'].sudo().search([
-                ('serial_no', '=', qr_token.serial_no),
+                ('serial_no', '=', qr_token.serial_no.name),
                 ('state', '=', 'approved')
             ], limit=1)
             
             if not registration:
                 registration = request.env['ms.warranty.registration'].sudo().search([
-                    ('serial_no', '=', qr_token.serial_no)
+                    ('serial_no', '=', qr_token.serial_no.name)
                 ], order='create_date desc', limit=1)
             
             public_user = request.env.ref('base.public_user')
@@ -72,7 +73,7 @@ class WarrantyPublic(http.Controller):
             'dealers': dealers,
             'error': error_status,
             'token_product_id': qr_token.product_id.id if qr_token.product_id else False,
-            'token_serial_no': qr_token.serial_no if qr_token.serial_no else False,
+            'token_serial_no': qr_token.serial_no.name if qr_token.serial_no else False,
             'current_token': token_str, 
             'token_state': qr_token.state, 
             'is_dealer_registered': is_dealer_registered,
@@ -85,6 +86,8 @@ class WarrantyPublic(http.Controller):
             'is_dealer': is_dealer,
             'registration': registration,
             'claim_ids': registration.claim_ids if registration and hasattr(registration, 'claim_ids') else False,
+            'registration_id': registration.id if registration else False,
+            'token_id': qr_token.id,
         })
 
     @http.route(['/warranty/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
@@ -94,15 +97,27 @@ class WarrantyPublic(http.Controller):
         if not token_str:
             return request.redirect('/')
         
+        qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
+        
         serial_no = post.get('serial_no')
         if serial_no:
             serial_no = serial_no.strip()
 
+        if not serial_no and qr_token and qr_token.serial_no:
+            serial_no = qr_token.serial_no.name
+
         if not serial_no or serial_no == '/':
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
         
+        lot = request.env['stock.lot'].sudo().search([
+            ('name', '=', serial_no)
+        ], limit=1)
+
+        if not lot:
+            return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
+
         existing_registration = request.env['ms.warranty.registration'].sudo().search([
-            ('serial_no', '=', serial_no),
+            ('serial_no', '=', lot.id), 
             ('state', 'in', ['approved', 'pending', 'draft']) 
         ], limit=1)
 
@@ -111,11 +126,9 @@ class WarrantyPublic(http.Controller):
                 return request.redirect(f'/warranty/registration?token={token_str}&error=duplicate_serial')
             else:
                 return request.redirect(f'/warranty/registration?token={token_str}&error=pending_registration')
-        
+            
         template_id = int(post.get('product_id')) if post.get('product_id') else False
         product_product_id = False
-
-        qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
 
         if template_id:
             product_product = request.env['product.product'].sudo().search([
@@ -129,16 +142,14 @@ class WarrantyPublic(http.Controller):
                 if product_template.product_variant_id:
                     product_product_id = product_template.product_variant_id.id
 
-        if not product_product_id:
-            qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
-            if qr_token and qr_token.product_id:
-                if qr_token.product_id._name == 'product.template':
-                    product_product = request.env['product.product'].sudo().search([
-                        ('product_tmpl_id', '=', qr_token.product_id.id)
-                    ], limit=1)
-                    product_product_id = product_product.id if product_product else qr_token.product_id.product_variant_id.id
-                else:
-                    product_product_id = qr_token.product_id.id
+        if not product_product_id and qr_token and qr_token.product_id:
+            if qr_token.product_id._name == 'product.template':
+                product_product = request.env['product.product'].sudo().search([
+                    ('product_tmpl_id', '=', qr_token.product_id.id)
+                ], limit=1)
+                product_product_id = product_product.id if product_product else qr_token.product_id.product_variant_id.id
+            else:
+                product_product_id = qr_token.product_id.id
 
         if not product_product_id:
             _logger.error("Warranty submission failed: product_product_id could not be resolved.")
@@ -166,7 +177,7 @@ class WarrantyPublic(http.Controller):
             'customer_phone': post.get('customer_phone'),
             'customer_email': post.get('customer_email'),
             'product_id': product_product_id,
-            'serial_no': serial_no, 
+            'serial_no': lot.id, 
             'purchase_date': post.get('purchase_date') or date.today(),
             'dealer_id': int(post.get('dealer_id')) if post.get('dealer_id') else False,
             'invoice_proof': invoice_data,
@@ -177,13 +188,12 @@ class WarrantyPublic(http.Controller):
 
         try:
             registration = request.env['ms.warranty.registration'].sudo().create(vals)
-            qr_token = request.env['ms.warranty.qr.token'].sudo().search([('token', '=', token_str)], limit=1)
             if qr_token:
                 qr_token.sudo().write({
                     'state': 'used',
                     'registration_id': registration.id,
-                    'use_count': qr_token.use_count + 1
                 })
+            
         except ValidationError as ve:
             _logger.error("Warranty registration validation error: %s", str(ve))
             return request.redirect(f'/warranty/registration?token={token_str}&error=duplicate_serial')
@@ -192,6 +202,7 @@ class WarrantyPublic(http.Controller):
             return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
 
         return request.render("ms_warranty_qr_claim_portal.registration_success_page")
+
     @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty_claim(self, **post):
         token_str = post.get('current_token')
@@ -204,6 +215,7 @@ class WarrantyPublic(http.Controller):
             ('serial_no', '=', serial_no),
             ('state', '=', 'approved')
         ], limit=1)
+
 
         if not registration or (registration.expiry_date and registration.expiry_date < date.today()):
             return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
@@ -401,3 +413,17 @@ class WarrantyServiceCenterPortal(http.Controller):
             'rejection_reason': rejection_reason
         })
         return request.redirect('/my/service-center/claims?success=claim_rejected')
+    @http.route(['/warranty/print/card/<int:token_id>'], type='http', auth="public", website=True)
+
+
+    def print_warranty_card(self, token_id, **kw):
+        pdf, _ = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
+            'ms_warranty_qr_claim_portal.action_report_warranty_card', [token_id]
+        )
+        
+        pdfhttpheaders = [
+            ('Content-Type', 'application/pdf'),
+            ('Content-Length', len(pdf)),
+            ('Content-Disposition', content_disposition('Warranty_Card.pdf')) 
+        ]
+        return request.make_response(pdf, headers=pdfhttpheaders)

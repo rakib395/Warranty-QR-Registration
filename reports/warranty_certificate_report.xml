@@ -145,7 +145,7 @@
                                     <tr>
                                         <td class="cert-label">Serial Number (S/N)</td>
                                         <td class="cert-value" style="font-family: 'Courier New', Courier, monospace; font-weight: bold; font-size: 15px; letter-spacing: 0.5px;">
-                                            <t t-esc="o.serial_no"/>
+                                            <t t-esc="o.serial_no.name"/>
                                         </td>
                                     </tr>
                                     <tr>

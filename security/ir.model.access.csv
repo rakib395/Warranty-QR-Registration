@@ -19,3 +19,4 @@ access_ms_warranty_labor_line_portal,ms.warranty.claim.labor.line.portal,model_m
 access_ms_warranty_event_log,ms.warranty.event.log,model_ms_warranty_event_log,base.group_user,1,1,1,1
 access_warranty_extend_wizard,warranty.extend.wizard,model_warranty_extend_wizard,base.group_user,1,1,1,1
 access_warranty_transfer_wizard,warranty.transfer.wizard,model_warranty_transfer_wizard,base.group_user,1,1,1,1
+access_warranty_generate_qr_wizard,access_warranty_generate_qr_wizard,model_warranty_generate_qr_wizard,base.group_user,1,1,1,1

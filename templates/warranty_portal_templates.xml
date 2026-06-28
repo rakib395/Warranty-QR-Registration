@@ -24,7 +24,9 @@
                                         <p class="text-muted mx-auto" style="max-width: 530px; font-size: 16px; line-height: 1.6;">
                                             The system state updated successfully. Service updates will reflect inside backend logs.
                                         </p>
+
                                     </t>
+
 
                                     <t t-else="">
                                         <div t-if="error == 'claim_failed'" class="alert alert-danger text-center shadow-sm rounded-3 mb-4" role="alert">
@@ -52,6 +54,14 @@
                                             </p>
                                         </t>
                                     </t>
+
+                                    <div class="d-flex justify-content-center align-items-center gap-2 mt-3">
+                                        <t t-if="token_id and live_status == 'approved'">
+                                            <a t-attf-href="/warranty/print/card/#{token_id}" class="btn btn-primary btn-lg rounded-pill px-4" style="font-size: 15px; font-weight: 600;">
+                                                <i class="fa fa-print me-2"/> Download Warranty Card
+                                            </a>
+                                        </t>
+                                    </div>
 
                                     <div class="row justify-content-center mt-4">
                                         <div class="col-md-10 text-start bg-light p-4 rounded-3 shadow-sm" style="border-left: 5px solid #28a745;">
@@ -111,8 +121,32 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="p-2 mb-2 bg-light rounded border-0 small row mx-0">
+                                                        <div class="col-6 mb-1" t-if="claim.rma_number">
+                                                            <strong class="text-muted">RMA Number:</strong> 
+                                                            <span class="badge bg-info text-dark ms-1"><t t-out="claim.rma_number"/></span>
+                                                        </div>
+                                                        <div class="col-6 mb-1" t-if="claim.logistics_status and claim.logistics_status != 'none'">
+                                                            <strong class="text-muted">Logistics:</strong>
+                                                            <span t-attf-class="badge ms-1 #{
+                                                                claim.logistics_status == 'pending' and 'bg-warning text-dark' or
+                                                                claim.logistics_status == 'shipped' and 'bg-primary' or
+                                                                claim.logistics_status == 'received' and 'bg-info text-dark' or
+                                                                claim.logistics_status == 'returning' and 'bg-secondary' or
+                                                                claim.logistics_status == 'delivered' and 'bg-success' or 'bg-light text-dark'
+                                                            }">
+                                                              <t t-out="request.env['ms.warranty.claim'].fields_get(['logistics_status'])['logistics_status']['selection']"/>
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-12 mt-1 border-top pt-1 text-muted" t-if="claim.courier_name or claim.tracking_reference">
+                                                            <i class="fa fa-truck me-1"/> 
+                                                            <t t-if="claim.courier_name">Carrier: <strong class="text-dark"><t t-out="claim.courier_name"/></strong></t>
+                                                            <t t-if="claim.tracking_reference"> | Tracking No: <strong class="text-dark"><t t-out="claim.tracking_reference"/></strong></t>
+                                                        </div>
+                                                    </div>
+
                                                     <div t-if="is_dealer and claim.state == 'repair' and not claim.customer_approved" class="alert alert-warning p-2 mt-1 mb-3">
-                                                        <p class="small mb-2"><strong>Notice:</strong> This service requires extra paid validation/charges. Approve on behalf of user?</p>
+                                                        <p class="small mb-2"><strong>Notice:</strong> This service requires extra paid charges. Approve on behalf of user?</p>
                                                         <form action="/warranty/claim/chargeable_approve" method="post">
                                                             <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                                             <input type="hidden" name="current_token" t-att-value="current_token"/>
@@ -143,7 +177,7 @@
                                                         <label class="fw-bold text-muted small uppercase mb-1" for="issue_category">Issue Category</label>
                                                         <select name="issue_category" class="form-select bg-light border-0" required="1" style="height: 45px;">
                                                             <option value="hardware">Hardware Failure</option>
-                                                            <option value="software">Software / Firmware Issue</option>
+                                                            <option value="software">Software Issue</option>
                                                             <option value="damage">Physical Damage (Check Policy Extension)</option>
                                                             <option value="other">Other Technical Faults</option>
                                                         </select>

@@ -4,6 +4,7 @@ import base64
 from io import BytesIO
 from datetime import date
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 
 class WarrantyQRToken(models.Model):
     _name = 'ms.warranty.qr.token'
@@ -14,7 +15,11 @@ class WarrantyQRToken(models.Model):
     token_hash = fields.Char(string='Token Hash')
     
     product_id = fields.Many2one('product.product', string='Product')
-    serial_no = fields.Char( string='Serial Number', copy=False)
+    serial_no = fields.Many2one(
+        'stock.lot', 
+        string='Serial Number', 
+        copy=False   
+    )
     registration_id = fields.Many2one('ms.warranty.registration', string='Linked Registration')
 
     company_id = fields.Many2one(
@@ -22,7 +27,7 @@ class WarrantyQRToken(models.Model):
     string='Company', 
     required=True, 
     default=lambda self: self.env.company
-)
+    )
     
     purpose = fields.Selection([
         ('registration', 'Registration'),
@@ -43,10 +48,16 @@ class WarrantyQRToken(models.Model):
     qr_code_image = fields.Binary(string='QR Image', compute='_compute_qr_code_image', store=True)
     
     active = fields.Boolean(default=True)
-    use_count = fields.Integer(string='Scan Count', default=0)
+    use_count = fields.Integer(string='Scan Count', compute='_compute_use_count', store=True)
+
+    used_serial_ids = fields.Many2many(
+        'stock.lot', 
+        compute='_compute_used_serial_ids', 
+        string='Serials Helper'
+    )
 
     _sql_constraints = [
-        ('uniq_serial_product', 'unique(product_id, serial_no)', 'Duplicate serial not allowed!')
+        ('unique_token', 'unique(token)', 'This token has already been generated!')
     ]
 
     live_warranty_status = fields.Selection([
@@ -68,7 +79,7 @@ class WarrantyQRToken(models.Model):
             reg = record.registration_id
             if not reg:
                 reg = self.env['ms.warranty.registration'].sudo().search([
-                    ('serial_no', '=', record.serial_no)
+                    ('serial_no', '=', record.serial_no.id)
                 ], limit=1)
 
             if not reg:
@@ -83,6 +94,14 @@ class WarrantyQRToken(models.Model):
                 record.live_warranty_status = 'approved'
             else:
                 record.live_warranty_status = 'not_found'
+    
+    @api.depends('state', 'registration_id')
+    def _compute_use_count(self):
+        for record in self:
+            if record.state == 'used' or record.registration_id:
+                record.use_count = 1
+            else:
+                record.use_count = 0
 
     @api.depends('token', 'purpose')
     def _compute_qr_url(self):
@@ -113,25 +132,77 @@ class WarrantyQRToken(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if 'company_id' not in vals or not vals.get('company_id'):
+            if not vals.get('company_id'):
                 vals['company_id'] = self.env.company.id
         return super().create(vals_list)
     
+    
+    @api.constrains('serial_no')
+    def _check_duplicate_serial(self):
+        for rec in self:
+            if not rec.serial_no:
+                continue
+            
+            duplicate = self.search([
+                ('serial_no', '=', rec.serial_no.id),
+                ('id', '!=', rec._origin.id if rec._origin else rec.id)
+            ], limit=1)
+
+            if duplicate:
+                raise ValidationError(
+                    _("This Serial Number (%s) is already assigned to another QR Token.") % rec.serial_no.name
+                )
+            
+
+    @api.depends('product_id')
+    def _compute_used_serial_ids(self):
+        for record in self:
+            if record.product_id:
+    
+                token_domain = [('product_id', '=', record.product_id.id), ('serial_no', '!=', False)]
+                if record._origin.id:
+                    token_domain.append(('id', '!=', record._origin.id))
+                token_used_serials = self.env['ms.warranty.qr.token'].sudo().search(token_domain).mapped('serial_no.id')
+            
+                reg_domain = [
+                    ('product_id', '=', record.product_id.id),
+                    ('serial_no', '!=', False),
+                    ('state', 'not in', ['rejected'])
+                ]
+                registered_serial_names = self.env['ms.warranty.registration'].sudo().search(reg_domain).mapped('serial_no')     
+             
+                registered_serial_ids = self.env['stock.lot'].sudo().search([
+                    ('product_id', '=', record.product_id.id),
+                    ('name', 'in', registered_serial_names)
+                ]).ids
+
+                all_used_ids = list(set(token_used_serials + registered_serial_ids))
+                record.used_serial_ids = self.env['stock.lot'].browse(all_used_ids)
+            else:
+                record.used_serial_ids = self.env['stock.lot']
+        
     @api.onchange('product_id')
     def _onchange_product_id(self):
         if not self.product_id:
             self.serial_no = False
-            return
-        
-        used = set(self.env['ms.warranty.qr.token'].sudo().search([
+            return {'domain': {'serial_no': [('id', '=', False)]}}
+
+        used_tokens = self.env['ms.warranty.qr.token'].sudo().search([
             ('product_id', '=', self.product_id.id),
             ('serial_no', '!=', False)
-        ]).mapped('serial_no'))
+        ])
+        used_serial_ids = used_tokens.mapped('serial_no.id')
 
-        lot = self.env['stock.lot'].sudo().search([
+        final_serial_domain = [
             ('product_id', '=', self.product_id.id),
-            ('name', '!=', False),
-            ('name', 'not in', list(used))
-        ], order='id asc', limit=1)
+            ('id', 'not in', used_serial_ids)
+        ]
 
-        self.serial_no = lot.name if lot else False
+        lot = self.env['stock.lot'].sudo().search(final_serial_domain, order='id asc', limit=1)
+        self.serial_no = lot if lot else False
+
+        return {
+            'domain': {
+                'serial_no': final_serial_domain
+            }
+        }

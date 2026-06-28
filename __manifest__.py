@@ -16,6 +16,7 @@
         'base',
         'mail',
         'product',
+        'stock',
         'website',
         'portal',
     ],

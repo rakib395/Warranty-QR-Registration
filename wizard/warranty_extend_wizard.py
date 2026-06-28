@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import timedelta
 
+
 class WarrantyExtendWizard(models.TransientModel):
     _name = 'warranty.extend.wizard'
     _description = 'Warranty Extension Wizard'
@@ -55,13 +56,21 @@ class WarrantyExtendWizard(models.TransientModel):
             'user_id': self.env.user.id,
         })
 
+        body_html = f"""
+        <div>
+            <p><strong>Warranty Manually Extended</strong></p>
+            <ul style="margin:0;padding-left:18px;">
+                <li><strong>Duration:</strong> {self.extension_months} Month(s)</li>
+                <li><strong>Old Expiry:</strong> {old_expiry}</li>
+                <li><strong>New Expiry:</strong> {new_expiry}</li>
+                <li><strong>Reason:</strong> {self.extension_reason}</li>
+            </ul>
+        </div>
+        """
+
         self.registration_id.message_post(
-            body=_(
-                "🛡️ <b>Warranty Manually Extended</b><br/>"
-                "• Duration: %s Months<br/>"
-                "• Old Expiry: %s<br/>"
-                "• New Expiry: %s<br/>"
-                "• Reason: %s"
-            ) % (self.extension_months, old_expiry, new_expiry, self.extension_reason)
-        )
-        return {'type': 'ir.actions.act_window_close'}
+            body=body_html,
+            body_is_html=True,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment',
+)

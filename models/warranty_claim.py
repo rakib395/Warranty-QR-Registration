@@ -22,6 +22,25 @@ class WarrantyClaim(models.Model):
         index=True, 
         default=lambda self: self.env.company
     )
+
+    rma_number = fields.Char(
+    string='RMA Number', 
+    readonly=True, 
+    copy=False, 
+    help="Return Merchandise Authorization Number"
+    )
+    logistics_status = fields.Selection([
+        ('none', 'No Return Required'),
+        ('pending', 'Waiting for Shipment'),
+        ('shipped', 'Shipped by Customer'),
+        ('received', 'Received at Service Center'),
+        ('returning', 'Sending Back to Customer'),
+        ('delivered', 'Delivered to Customer')
+    ], string='Logistics Status', default='none', tracking=True)
+
+    courier_name = fields.Char(string='Courier/Carrier Name', tracking=True)
+    tracking_reference = fields.Char(string='Tracking Number', tracking=True)
+    return_shipping_address = fields.Text(string='Return Shipping Address')
     
     issue_category = fields.Selection([
         ('hardware', 'Hardware Failure'),
@@ -97,6 +116,8 @@ class WarrantyClaim(models.Model):
     
     submitted_by_id = fields.Many2one('res.users', string='Submitted By (User)', default=lambda self: self.env.user, index=True, tracking=True)
     customer_approved = fields.Boolean(string='Charge Approved by Customer', default=False, tracking=True)
+
+    
 
     def _send_warranty_sms_notification(self, message_text):
         """Helper method to fire SMS standard gateway"""
@@ -218,10 +239,27 @@ class WarrantyClaim(models.Model):
 
     def action_approve(self):
         self.ensure_one()
-        self.write({
+        vals = {
             'state': 'approved',
-            'rejection_reason': False  
-        })
+            'rejection_reason': False
+        }
+
+        if self.resolution_type in ['repair', 'replacement']:
+            if not self.rma_number:
+                vals['rma_number'] = self.env['ir.sequence'].with_company(self.company_id).next_by_code('ms.warranty.rma') or '/'
+            vals['logistics_status'] = 'pending'
+        else:
+            vals['logistics_status'] = 'none'
+
+        self.write(vals)
+        
+        self.message_post(
+            body=_("Dear Customer, Your warranty claim %s has been Approved. RMA Number: %s. Our service center will process it shortly.") % (self.name, self.rma_number or _('N/A')),
+            subtype_xmlid="mail.mt_comment"
+        )
+    
+        msg = _("Good News! Your warranty claim %s has been Approved. RMA: %s. Our team will contact you shortly. - Mindsynth") % (self.name, self.rma_number or '')
+        self._send_warranty_sms_notification(msg)
         self.message_post(
             body=_("Dear Customer, Your warranty claim %s has been Approved. Our service center will process it shortly.") % self.name,
             subtype_xmlid="mail.mt_comment"
@@ -443,6 +481,30 @@ class WarrantyClaim(models.Model):
         
         msg = _("Your claim %s has been marked as Chargeable. Estimated Amount: %s. Reason: %s. Please approve to proceed. - Mindsynth") % (self.name, self.estimated_charge_amount, self.charge_reason)
         self._send_warranty_sms_notification(msg)
+
+    def action_logistics_shipped(self):
+        """Called when customer ships the product"""
+        self.ensure_one()
+        self.write({'logistics_status': 'shipped'})
+        self.message_post(body=_("Logistics Update: Product has been shipped by the customer. Courier: %s, Tracking: %s") % (self.courier_name or _('N/A'), self.tracking_reference or _('N/A')))
+
+    def action_logistics_received(self):
+        """Called when Service Center receives the defective product"""
+        self.ensure_one()
+        self.write({'logistics_status': 'received'})
+        self.message_post(body=_("Logistics Update: Defective product safely received at Service Center for inspection/repair."))
+
+    def action_logistics_returning(self):
+        """Before or after resolving, when sending product back to customer"""
+        self.ensure_one()
+        self.write({'logistics_status': 'returning'})
+        self.message_post(body=_("Logistics Update: Product is being dispatched/sent back to the customer address."))
+
+    def action_logistics_delivered(self):
+        """Final delivery confirmation"""
+        self.ensure_one()
+        self.write({'logistics_status': 'delivered'})
+        self.message_post(body=_("Logistics Update: Product has been successfully delivered to the customer."))
 
     @api.model
     def _cron_check_sla_breach(self):

@@ -36,7 +36,7 @@ class WarrantyRegistration(models.Model):
     
     # Product & Purchase Details
     product_id = fields.Many2one('product.product', string='Product', required=True, tracking=True)
-    serial_no = fields.Char(string='Serial Number', required=True, tracking=True)
+    serial_no = fields.Many2one('stock.lot', string='Serial Number', required=True, tracking=True)
     purchase_date = fields.Date(string='Purchase Date', default=fields.Date.context_today, required=True)
     dealer_id = fields.Many2one('res.partner', string='Dealer/Store', help="Where the product was bought")
     invoice_proof = fields.Binary(string='Invoice Proof/Photo')
@@ -69,14 +69,14 @@ class WarrantyRegistration(models.Model):
     def _check_duplicate_registration(self):
         for record in self:
             domain = [
-                ('serial_no', '=', record.serial_no),
+                ('serial_no', '=', record.serial_no.id), 
                 ('product_id', '=', record.product_id.id),
                 ('id', '!=', record.id),
                 ('state', 'not in', ['rejected'])
             ]
             if self.search_count(domain) > 0:
                 raise ValidationError(_("This Serial Number is already registered for this product!"))
-
+            
     @api.depends('purchase_date', 'policy_id')
     def _compute_expiry_date(self):
         for record in self:
@@ -99,11 +99,21 @@ class WarrantyRegistration(models.Model):
 
     def action_approve(self):
         self.write({'state': 'approved'})
+        for record in self:
+            if record.serial_no:
+                token_record = self.env['ms.warranty.qr.token'].sudo().search([
+                    ('serial_no', '=', record.serial_no.id) 
+                ], limit=1)
+                if token_record:
+                    token_record.write({
+                        'state': 'used',
+                        'registration_id': record.id,
+                    })
 
         for record in self:
             if record.serial_no:
                 token_record = self.env['ms.warranty.qr.token'].sudo().search([
-                    ('serial_no', '=', record.serial_no)
+                    ('serial_no.name', '=', record.serial_no)
                 ], limit=1)
                 if token_record:
                     token_record.write({
@@ -111,7 +121,6 @@ class WarrantyRegistration(models.Model):
                         'registration_id': record.id,
                         'use_count': token_record.use_count + 1
                     })
-
     def action_draft(self):
         self.write({'state': 'draft'})
 

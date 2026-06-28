@@ -15,6 +15,11 @@ from . import warranty_claim_part_line
 from . import warranty_claim_labor_line
 from . import warranty_event_log
 from . import warranty_qr_token
+
+
+from . import stock_picking
+
+
 # from . import warranty_scan_log
 from . import product_template
 from . import product_product
