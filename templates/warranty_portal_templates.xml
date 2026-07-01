@@ -199,7 +199,19 @@
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_name">Full Name</label>
                                             <input type="text" class="form-control form-control-lg bg-light border-0" name="customer_name" required="1" t-att-value="customer_name"/>
                                         </div>
-                                    
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1">Product Name</label>
+                                            <input type="text" class="form-control form-control-lg bg-light border-0" t-att-value="product_name" readonly="1" style="cursor: not-allowed; opacity: 0.85;"/>
+                                            <input type="hidden" name="product_id" t-att-value="token_product_id"/>
+                                        </div>
+
+                                        <div class="form-group col-md-6 mb-3">
+                                            <label class="fw-bold text-muted small uppercase mb-1">Product Serial No</label>
+                                            <input type="text" class="form-control form-control-lg bg-light border-0" t-att-value="token_serial_no" readonly="1" style="cursor: not-allowed; opacity: 0.85;"/>
+                                            <input type="hidden" name="serial_no" t-att-value="token_serial_no"/>
+                                        </div>
+
                                         <div class="form-group col-md-6 mb-3">
                                             <label class="fw-bold text-muted small uppercase mb-1" for="customer_phone">Phone Number</label>
                                             <input type="tel" class="form-control form-control-lg bg-light border-0" name="customer_phone" required="1" t-att-value="customer_phone"/>
@@ -231,6 +243,8 @@
                                             <input type="file" class="form-control form-control-lg bg-light border-0" name="invoice_proof" accept="image/*,application/pdf"/>
                                         </div>
                                     </div>
+
+                                    
                                     
                                     <div class="text-end mt-3">
                                         <button type="submit" class="btn btn-primary px-5 py-2 fw-bold rounded-3">Register Warranty</button>
