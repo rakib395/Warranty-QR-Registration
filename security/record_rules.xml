@@ -27,7 +27,6 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
- 
     <record id="ms_warranty_claim_part_line_dealer_rule" model="ir.rule">
         <field name="name">Dealer: Part Lines Rules</field>
         <field name="model_id" ref="model_ms_warranty_claim_part_line"/>
@@ -43,21 +42,53 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
-  
-    <record id="ms_warranty_claim_labor_line_dealer_rule" model="ir.rule">
-        <field name="name">Dealer: Labor Lines Rules</field>
-        <field name="model_id" ref="model_ms_warranty_claim_labor_line"/>
+   <record id="ms_warranty_claim_portal_combined_rule" model="ir.rule">
+        <field name="name">Portal User: See Claims (Dealer or Service Center)</field>
+        <field name="model_id" ref="model_ms_warranty_claim"/>
         <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
         <field name="domain_force">[
-            '|',
+            '|', '|',
+            ('submitted_by_id', '=', user.id),
+            ('registration_id.dealer_id', '=', user.partner_id.id),
+            ('service_center_id', '=', user.service_center_id.id)
+        ]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/> 
+        <field name="perm_create" eval="True"/> <field name="perm_unlink" eval="False"/>
+    </record>
+
+   <record id="ms_warranty_claim_part_line_portal_combined_rule" model="ir.rule">
+        <field name="name">Portal User: Part Lines Access</field>
+        <field name="model_id" ref="model_ms_warranty_claim_part_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[
+            '|', '|',
             ('claim_id.submitted_by_id', '=', user.id),
-            ('claim_id.registration_id.dealer_id', '=', user.partner_id.id)
+            ('claim_id.registration_id.dealer_id', '=', user.partner_id.id),
+            ('claim_id.service_center_id', '=', user.service_center_id.id)
         ]</field>
         <field name="perm_read" eval="True"/>
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
     </record>
+
+    <record id="ms_warranty_claim_labor_line_portal_combined_rule" model="ir.rule">
+        <field name="name">Portal User: Labor Lines Access</field>
+        <field name="model_id" ref="model_ms_warranty_claim_labor_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[
+            '|', '|',
+            ('claim_id.submitted_by_id', '=', user.id),
+            ('claim_id.registration_id.dealer_id', '=', user.partner_id.id),
+            ('claim_id.service_center_id', '=', user.service_center_id.id)
+        ]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
 
     <record id="ms_warranty_policy_multi_company_rule" model="ir.rule">
         <field name="name">Warranty Policy: Multi-Company Rule</field>
@@ -81,4 +112,3 @@
     </record>
 
 </odoo>
-

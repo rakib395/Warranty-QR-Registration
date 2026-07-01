@@ -38,7 +38,19 @@ class WarrantyClaim(models.Model):
         ('delivered', 'Delivered to Customer')
     ], string='Logistics Status', default='none', tracking=True)
 
-    courier_name = fields.Char(string='Courier/Carrier Name', tracking=True)
+    portal_service_center_id = fields.Many2one(
+        'ms.warranty.service.center', 
+        string='Customer Preferred Service Center',
+        tracking=True
+    )
+
+    delivery_method = fields.Selection([
+        ('walk_in', 'Drop & Pick'),
+        ('courier', 'Via Courier Service')
+    ], string='Delivery Method', default='walk_in', tracking=True)
+
+    courier_name = fields.Char(string="Courier Name")
+
     tracking_reference = fields.Char(string='Tracking Number', tracking=True)
     return_shipping_address = fields.Text(string='Return Shipping Address')
     
@@ -213,6 +225,21 @@ class WarrantyClaim(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('ms.warranty.claim') or _('New')
+            
+            if vals.get('registration_id'):
+                registration = self.env['ms.warranty.registration'].browse(vals['registration_id'])
+                policy = registration.policy_id
+                
+                if policy and hasattr(policy, 'sla_resolution_value') and policy.sla_resolution_value:
+                    sla_days = policy.sla_resolution_value
+                elif policy and hasattr(policy, 'registration_deadline_days') and policy.registration_deadline_days:
+                    sla_days = policy.registration_deadline_days
+                else:
+                    sla_days = 7  
+                
+                vals['sla_deadline'] = fields.Date.today() + timedelta(days=sla_days)
+            else:
+                vals['sla_deadline'] = fields.Date.today() + timedelta(days=7)
         records = super(WarrantyClaim, self).create(vals_list)
         
         for rec in records:
@@ -316,22 +343,34 @@ class WarrantyClaim(models.Model):
     def action_assign_claim_processing(self, service_center_id, technician_id):
         self.ensure_one()
         calculated_deadline = fields.Date.today() + timedelta(days=7)
-             
+            
         self.write({
             'service_center_id': service_center_id.id,
             'technician_id': technician_id.id,
             'sla_deadline': calculated_deadline,
             'state': 'under_review' 
         })
-  
-        body_msg = _(
-            "Claim has been successfully assigned.<br/>"
-            "<b>Service Center:</b> %s<br/>"
-            "<b>Technician:</b> %s<br/>"
-            "<b>SLA Deadline:</b> %s"
-        ) % (service_center_id.name, technician_id.name, calculated_deadline)
+
+        body_html = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1E293B;">
+            <p style="margin-bottom: 8px;">
+                <span class="fa fa-user-plus" style="color: #3B82F6; margin-right: 6px;"></span>
+                <strong>Claim Has Been Successfully Assigned</strong>
+            </p>
+            <ul style="margin: 0; padding-left: 20px; list-style-type: square;">
+                <li style="margin-bottom: 4px;"><strong>Service Center:</strong> {service_center_id.name}</li>
+                <li style="margin-bottom: 4px;"><strong>Technician:</strong> {technician_id.name}</li>
+                <li style="margin-bottom: 4px;"><strong>SLA Deadline:</strong> {calculated_deadline}</li>
+            </ul>
+        </div>
+        """
         
-        self.message_post(body=body_msg, subtype_xmlid="mail.mt_comment")
+        self.message_post(
+            body=body_html, 
+            body_is_html=True, 
+            message_type='comment', 
+            subtype_xmlid="mail.mt_comment"
+        )
 
         activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
         self.activity_schedule(
@@ -341,7 +380,6 @@ class WarrantyClaim(models.Model):
             note=_("Please review the detailed issue description and resolve the claim before the SLA deadline."),
             user_id=technician_id.id
         )
-
     def action_mark_as_repaired(self):
         self.ensure_one()
         if not self.diagnosis:

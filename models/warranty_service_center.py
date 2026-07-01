@@ -25,3 +25,11 @@ class WarrantyServiceCenter(models.Model):
             name = f"[{center.code}] {center.name}" if center.code else center.name
             result.append((center.id, name))
         return result
+    
+class ResUsers(models.Model):
+    _inherit = 'res.users'
+
+    service_center_id = fields.Many2one(
+        'ms.warranty.service.center', 
+        string="Assigned Service Center"
+    )

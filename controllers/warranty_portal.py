@@ -8,7 +8,27 @@ from odoo.http import request, content_disposition
 from odoo.exceptions import ValidationError, UserError
 _logger = logging.getLogger(__name__)
 
+
 class WarrantyPublic(http.Controller):
+
+    @http.route(['/warranty/get_center_address'], type='jsonrpc', auth="public", methods=['POST'], csrf=False)
+    def get_center_address(self, center_id, **kw):
+        _logger.info("Center ID received: %s", center_id)
+        if not center_id:
+            return {'status': 'error', 'address': ''}
+        
+        try:
+            center = request.env['ms.warranty.service.center'].sudo().browse(int(center_id))
+            if center.exists():
+                _logger.info("Found Center: %s - Address: %s", center.name, center.address)
+                return {
+                    'status': 'success', 
+                    'address': center.address or 'Address details not specified.'
+                }
+        except Exception as e:
+            _logger.error("Error fetching service center address: %s", str(e))
+            
+        return {'status': 'error', 'address': ''}
 
     @http.route(['/warranty/registration'], type='http', auth="public", website=True, sitemap=False)
     def public_warranty_form(self, **post):
@@ -89,6 +109,41 @@ class WarrantyPublic(http.Controller):
             'registration_id': registration.id if registration else False,
             'token_id': qr_token.id,
         })
+    
+    @http.route('/warranty/claim/form/<int:token_id>', type='http', auth='public', website=True)
+    def warranty_claim_form_view(self, token_id, **kw):
+        qr_token = request.env['ms.warranty.qr.token'].sudo().browse(token_id)
+        if not qr_token.exists():
+            return request.render("http_routing.404")
+
+        registration = False
+        if qr_token.state == 'used' and qr_token.serial_no:
+            registration = request.env['ms.warranty.registration'].sudo().search([
+                ('serial_no', '=', qr_token.serial_no.name),
+                ('state', '=', 'approved')
+            ], limit=1)
+            if not registration:
+                registration = request.env['ms.warranty.registration'].sudo().search([
+                    ('serial_no', '=', qr_token.serial_no.name)
+                ], order='create_date desc', limit=1)
+
+        current_user = request.env.user
+        is_dealer = False
+        if current_user and current_user != request.env.ref('base.public_user'):
+            is_dealer = True
+        
+        service_centers = request.env['ms.warranty.service.center'].sudo().search([])
+
+        vals = {
+            'token_id': qr_token.id,
+            'current_token': qr_token.token, 
+            'token_serial_no': qr_token.serial_no.id if qr_token.serial_no else False, # সাবমিট মেথডে আইডি চেক করে, তাই আইডি পাস করা হলো
+            'is_dealer': is_dealer,
+            'registration': registration,
+            'service_centers': service_centers,
+        }
+        return request.render('ms_warranty_qr_claim_portal.warranty_claim_form_page', vals)
+
 
     @http.route(['/warranty/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty(self, **post):
@@ -206,26 +261,51 @@ class WarrantyPublic(http.Controller):
     @http.route(['/warranty/claim/submit'], type='http', auth="public", methods=['POST'], website=True, csrf=False)
     def submit_warranty_claim(self, **post):
         token_str = post.get('current_token')
-        serial_no = post.get('serial_no')
+        serial_no_raw = post.get('serial_no')
         
-        if not token_str or not serial_no:
+        if not token_str or not serial_no_raw:
             return request.redirect('/')
         
-        registration = request.env['ms.warranty.registration'].sudo().search([
-            ('serial_no', '=', serial_no),
-            ('state', '=', 'approved')
-        ], limit=1)
+        try:
+            serial_no_id = int(serial_no_raw)
+        except (ValueError, TypeError):
+            serial_no_id = False
 
+        if not serial_no_id:
+            _logger.error("Warranty claim failed: serial_no is missing or invalid integer.")
+            return request.redirect(f'/warranty/registration?token={token_str}&error=invalid_data')
+        
+        search_domain = [
+            ('state', '=', 'approved'),
+            '|',
+            ('serial_no', '=', serial_no_id),
+            ('serial_no.name', '=', str(serial_no_raw).strip())
+        ]
+        
 
-        if not registration or (registration.expiry_date and registration.expiry_date < date.today()):
-            return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
+        registration = request.env['ms.warranty.registration'].sudo().search(search_domain, limit=1)
+
+      
+        _logger.info("CLAIM SUBMIT DEBUG - serial_no_id: %s, serial_no_raw: %s, registration_found: %s", 
+                     serial_no_id, serial_no_raw, registration)
+
+        if not registration:
+                return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
+                
+        if registration.expiry_date and registration.expiry_date < date.today():
+                _logger.warning("Warranty registration expired for Serial ID: %s", serial_no_id)
+                return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
 
         current_user = request.env.user
         public_user = request.env.ref('base.public_user')
         is_dealer = current_user and current_user != public_user
+
+
         
         if is_dealer and registration.dealer_id and registration.dealer_id.id != current_user.partner_id.id:
             return request.redirect(f'/warranty/registration?token={token_str}&error=not_eligible')
+
+
 
         photo_file = post.get('product_photo')
         photo_data = False
@@ -246,6 +326,14 @@ class WarrantyPublic(http.Controller):
 
         claim_company_id = registration.company_id.id if registration.company_id else request.env.company.id
 
+        portal_service_center = post.get('portal_service_center_id')
+        try:
+            service_center_int = int(portal_service_center) if portal_service_center else False
+        except (ValueError, TypeError):
+            service_center_int = False
+
+        delivery_method = post.get('delivery_method', 'walk_in')
+
         vals = {
             'registration_id': registration.id,
             'issue_category': post.get('issue_category', 'hardware'),
@@ -254,9 +342,12 @@ class WarrantyPublic(http.Controller):
             'product_photo': photo_data,
             'invoice_proof': invoice_data,
             'state': 'submitted',
-            'claim_source': source_val,                                        
+            'claim_source': source_val,                                         
             'submitted_by_id': submitted_by_val,
-            'company_id': claim_company_id,          
+            'company_id': claim_company_id,
+            'portal_service_center_id': service_center_int,
+            'service_center_id': service_center_int,
+            'delivery_method': delivery_method,          
         }
 
         try:
@@ -265,7 +356,7 @@ class WarrantyPublic(http.Controller):
         except Exception as e:
             _logger.error("Warranty claim submission failed: %s", str(e))
             return request.redirect(f'/warranty/registration?token={token_str}&error=claim_failed')
-
+        
     @http.route(['/warranty/warranty/claim/chargeable_approve', '/warranty/claim/chargeable_approve'], type='http', auth="user", methods=['GET', 'POST'], website=True, csrf=False)
     def approve_chargeable_repair(self, **post):
         token_str = post.get('current_token')
@@ -413,9 +504,9 @@ class WarrantyServiceCenterPortal(http.Controller):
             'rejection_reason': rejection_reason
         })
         return request.redirect('/my/service-center/claims?success=claim_rejected')
+    
+
     @http.route(['/warranty/print/card/<int:token_id>'], type='http', auth="public", website=True)
-
-
     def print_warranty_card(self, token_id, **kw):
         pdf, _ = request.env['ir.actions.report'].sudo()._render_qweb_pdf(
             'ms_warranty_qr_claim_portal.action_report_warranty_card', [token_id]

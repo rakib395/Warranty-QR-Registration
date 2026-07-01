@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="warranty_claim_form_page" name="Warranty Claim Form">
+        <t t-call="website.layout">
+            <style>
+                .aesthetic-card {
+                    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04) !important;
+                    border-radius: 16px !important;
+                }
+                .form-label-custom {
+                    font-size: 0.85rem !important;
+                    letter-spacing: 0.5px;
+                    color: #4A5568;
+                    font-weight: 600;
+                }
+                .input-custom {
+                    background-color: #F8FAFC !important;
+                    border: 1px solid #E2E8F0 !important;
+                    border-radius: 10px !important;
+                    padding: 12px 16px !important;
+                    font-size: 0.95rem !important;
+                    color: #1E293B !important;
+                    transition: all 0.2s ease-in-out !important;
+                }
+                .input-custom:focus {
+                    background-color: #FFFFFF !important;
+                    border-color: #3B82F6 !important;
+                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+                    outline: none !important;
+                }
+                .file-upload-wrapper {
+                    position: relative;
+                    border: 2px dashed #CBD5E1;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                    background-color: #F8FAFC;
+                    transition: all 0.2s ease;
+                }
+                .file-upload-wrapper:hover {
+                    border-color: #3B82F6;
+                    background-color: #F0FDF4;
+                }
+                .file-upload-wrapper input[type="file"] {
+                    position: absolute;
+                    top: 0; left: 0; width: 100%; height: 100%;
+                    opacity: 0;
+                    cursor: pointer;
+                }
+                .btn-submit-custom {
+                    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+                    color: #FFFFFF !important;
+                    border: none !important;
+                    border-radius: 10px !important;
+                    padding: 14px 32px !important;
+                    font-weight: 600 !important;
+                    letter-spacing: 0.3px;
+                    transition: all 0.2s ease !important;
+                }
+                .btn-submit-custom:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+                    opacity: 0.95;
+                }
+            </style>
+
+            <div id="wrap" class="bg-smooth-light" style="background-color: #F4F6F9; min-height: 100vh; padding: 40px 0;">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-7 col-md-9 bg-white p-4 p-md-5 aesthetic-card">
+                            
+                            <div class="text-center mb-5">
+                                <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mb-3" style="width: 64px; height: 64px; background-color: #EFF6FF !important;">
+                                    <i class="fa fa-shield text-primary" style="font-size: 28px; color: #3B82F6 !important;"/>
+                                </div>
+                                <h2 class="fw-bold tracking-tight" style="color: #0F172A; font-size: 1.75rem;">Submit Portal Warranty Claim</h2>
+                                <p class="text-muted mx-auto mt-2" style="max-width: 480px; font-size: 0.9rem; line-height: 1.5;">
+                                    Please fill out the technical details below to solve your problem.
+                                </p>
+                            </div>
+
+                            <form action="/warranty/claim/submit" method="post" class="o_warranty_claim_portal_form" enctype="multipart/form-data">
+                                
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                <input type="hidden" name="current_token" t-att-value="current_token"/>
+                                
+                                <input type="hidden" name="serial_no" t-att-value="token_serial_no"/>
+                                
+                                <div class="row g-4">
+                                    <div class="form-group col-12">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block" for="issue_category">
+                                            <i class="fa fa-tags me-1 text-muted"/> Issue Category
+                                        </label>
+                                        <select name="issue_category" class="form-select input-custom w-100 shadow-none" required="1">
+                                            <option value="hardware">Hardware Failure</option>
+                                            <option value="software">Software Issue</option>
+                                            <option value="damage">Physical Damage (Check Policy Extension)</option>
+                                            <option value="other">Other Technical Faults</option>
+                                        </select>
+                                    </div>
+                                
+                                    <div class="form-group col-12">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block" for="preferred_contact">
+                                            <i class="fa fa-phone me-1 text-muted"/> Preferred Contact 
+                                        </label>
+                                        <input type="text" class="form-control input-custom shadow-none" name="preferred_contact" placeholder=" +88017xxxxxxxx / customer@email.com" required="1"/>
+                                    </div>
+                                
+                                    <div class="form-group col-12">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block" for="description">
+                                            <i class="fa fa-pencil-square-o me-1 text-muted"/> Detailed Issue Description
+                                        </label>
+                                        <textarea class="form-control input-custom shadow-none" name="description" rows="4" placeholder="Please provide a complete breakdown of the technical faults..." required="1" style="resize: none;"/>
+                                    </div>
+
+                                   <div class="form-group col-md-6">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block" for="portal_service_center_id">
+                                            <i class="fa fa-map-marker me-1 text-muted"/> Nearest Service Center
+                                        </label>
+                                        <select name="portal_service_center_id" class="form-select input-custom w-100 shadow-none" required="1">
+                                            <option value=""> Choose Nearest Center </option>
+                                            <t t-foreach="service_centers" t-as="center">
+                                                <option t-att-value="center.id">
+                                                    <t t-esc="center.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block">
+                                            <i class="fa fa-truck me-1 text-muted"/> Product Delivery Method
+                                        </label>
+                                        <div class="d-flex flex-wrap gap-3 mt-2 pt-1">
+                                            <div class="form-check me-2">
+                                                <input class="form-check-input" type="radio" name="delivery_method" id="delivery_walk" value="walk_in" checked="checked" style="cursor: pointer;"/>
+                                                <label class="form-check-label text-dark small fw-medium" for="delivery_walk" style="cursor: pointer;">
+                                                    Inbound/Walk-in
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="delivery_method" id="delivery_courier" value="courier" style="cursor: pointer;"/>
+                                                <label class="form-check-label text-dark small fw-medium" for="delivery_courier" style="cursor: pointer;">
+                                                    Courier Service
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-12 mt-3" id="service_center_address_container" style="display: none;">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block">
+                                            <i class="fa fa-building me-1 text-muted"/> Service Center Full Address
+                                        </label>
+                                        <textarea class="form-control input-custom shadow-none" id="service_center_full_address" rows="2" readonly="readonly" style="resize: none; background-color: #f8f9fa;"/>
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block">
+                                            <i class="fa fa-image me-1 text-muted"/> Product/Fault Photo
+                                        </label>
+                                        <div class="file-upload-wrapper">
+                                            <i class="fa fa- cloud-upload text-muted mb-2 d-block" style="font-size: 24px;"/>
+                                            <span class="text-dark small d-block fw-medium">Click to upload photo</span>
+                                            <span class="text-muted extra-small">PNG, JPG up to 5MB</span>
+                                            <input type="file" name="product_photo" accept="image/*"/>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label-custom text-uppercase mb-2 d-block">
+                                            <i class="fa fa-file-text-o me-1 text-muted"/> Purchase Invoice Proof
+                                        </label>
+                                        <div class="file-upload-wrapper">
+                                            <i class="fa fa-file-pdf-o text-muted mb-2 d-block" style="font-size: 24px Haus;"/>
+                                            <span class="text-dark small d-block fw-medium">Click to upload invoice</span>
+                                            <span class="text-muted extra-small">PDF, PNG, JPG accepted</span>
+                                            <input type="file" name="invoice_proof" accept="image/*,application/pdf"/>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 text-center mt-4">
+                                        <button type="submit" class="btn btn-submit-custom w-100 py-3">
+                                            <i class="fa fa-paper-plane me-2"/> Submit Claim Request
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div> 
+                    </div> 
+                </div>
+            </div> 
+        </t>
+    </template>
+</odoo>
+                           

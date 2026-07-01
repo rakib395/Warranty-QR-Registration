@@ -8,19 +8,21 @@ from odoo.exceptions import ValidationError
 
 class WarrantyQRToken(models.Model):
     _name = 'ms.warranty.qr.token'
+    _inherit = ['mail.thread']
     _description = 'Warranty QR Token'
 
-    name = fields.Char( string='Name',required=True,default=lambda self: self.env['ir.sequence'].next_by_code('ms.warranty.qr.token') or '/',copy=False)
+    name = fields.Char( string='Name',required=True,default=lambda self: self.env['ir.sequence'].next_by_code('ms.warranty.qr.token') or '/',copy=False, tracking=True)
     token = fields.Char(string='Token', required=True, default=lambda self: str(uuid.uuid4()), copy=False)
     token_hash = fields.Char(string='Token Hash')
     
-    product_id = fields.Many2one('product.product', string='Product')
+    product_id = fields.Many2one('product.product', string='Product', tracking=True)
     serial_no = fields.Many2one(
         'stock.lot', 
         string='Serial Number', 
-        copy=False   
+        copy=False,
+        tracking=True 
     )
-    registration_id = fields.Many2one('ms.warranty.registration', string='Linked Registration')
+    registration_id = fields.Many2one('ms.warranty.registration', string='Linked Registration', tracking=True)
 
     company_id = fields.Many2one(
     'res.company', 
@@ -35,7 +37,7 @@ class WarrantyQRToken(models.Model):
         ('claim', 'Claim'),
         ('warranty_card', 'Warranty Card'),
         ('generic', 'Generic')
-    ], string='Purpose', required=True, default='registration')
+    ], string='Purpose', required=True, default='registration', tracking=True)
     
     state = fields.Selection([
         ('new', 'New'),

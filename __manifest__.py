@@ -47,7 +47,7 @@
         # 'views/warranty_service_center_views.xml',
         # 'views/warranty_dashboard_views.xml',
         'views/product_template_views.xml',
-        # 'views/res_partner_views.xml',
+        'views/res_partner_views.xml',
         # 'views/res_config_settings_views.xml',
 
         
@@ -55,6 +55,7 @@
         # 'templates/warranty_public_templates.xml',
          'templates/warranty_portal_templates.xml',
         # 'templates/warranty_email_templates.xml',
+          'templates/claim_form_template.xml',
         
         # Reports
         'reports/warranty_certificate_report.xml',
@@ -65,6 +66,11 @@
     # 'demo': [
     #  'data/warranty_demo_data.xml',
     #],
+    'assets': {
+    'web.assets_frontend': [
+         'ms_warranty_qr_claim_portal/static/src/js/warranty_portal.js',
+    ],
+},
     'images': [
         'static/description/banner.png',
     ],
