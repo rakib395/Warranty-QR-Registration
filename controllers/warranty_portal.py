@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import logging
+from odoo import tools
 from datetime import date
 from odoo import http, _
 from odoo.http import request
@@ -422,13 +423,43 @@ class WarrantyServiceCenterPortal(http.Controller):
         if not claim.exists() or not user_service_center or claim.service_center_id.id != user_service_center.id:
             return request.render("http_routing.403")
 
+        diagnosis_text = post.get('diagnosis') or "No diagnosis report provided."
+        inspection_result_text = post.get('inspection_result') or "N/A"
+        is_covered_val = True if post.get('is_covered') == '1' else False
+        coverage_status = "Yes, Free Repair Under Warranty" if is_covered_val else "No, Billable / Chargeable Service"
+
         vals = {
             'diagnosis': post.get('diagnosis'),
             'inspection_result': post.get('inspection_result'),
             'is_covered': True if post.get('is_covered') == '1' else False,
+            'state': 'resolved', 
         }
+        
         claim.sudo().write(vals)
+        
+        raw_html = f"""
+        <div>
+            <p><strong>Warranty Claim Inspected &amp; Marked as Resolved</strong></p>
+            <ul style="margin:0;padding-left:18px;">
+                <li><strong>Inspection Metric:</strong> {inspection_result_text.title()}</li>
+                <li><strong>Warranty Coverage Evaluation:</strong> {coverage_status}</li>
+                <li><strong>Technical Diagnosis Report:</strong> {diagnosis_text}</li>
+            </ul>
+        </div>
+        """
+
+        body_html = tools.html_sanitize(raw_html)
+
+        claim.sudo().message_post(
+            body=body_html,
+            body_is_html=True,
+            message_type='comment',
+            subtype_xmlid='mail.mt_comment'
+        )
+
+
         return request.redirect(f'/my/service-center/claim/{claim_id}?success=inspection_updated')
+    
 
     @http.route(['/my/service-center/claim/add_lines'], type='http', auth="user", methods=['POST'], website=True, csrf=False)
     def add_repair_lines(self, **post):

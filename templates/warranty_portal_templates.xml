@@ -328,186 +328,206 @@
         </t>
     </template>
 
+
+
     <template id="service_center_claim_detail_template" name="Manage Assigned Claim">
         <t t-call="website.layout">
             
-            <script src="https://cdn.tailwindcss.com"></script>
-            
-            <div class="min-h-screen bg-gray-50 py-8">
-                <div class="max-w-7xl mx-auto px-6">
+            <div class="container-fluid bg-light py-5 min-vh-100">
+                <div class="container-xl">
                     
-                    <a href="/my/service-center/claims" 
-                    class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors">
-                        <i class="fa fa-arrow-left"></i>
-                        <span class="font-medium">Back to Dashboard</span>
-                    </a>
-
-                    <div t-if="error == 'missing_reason'" class="bg-red-50 border border-red-200 text-red-700 px-5 py-4 rounded-2xl mb-6 flex items-center gap-3">
-                        <i class="fa fa-exclamation-triangle"></i>
-                        <strong>Rejection reason is required!</strong>
-                    </div>
-                    
-                    <div t-if="success" class="bg-green-50 border border-green-200 text-green-700 px-5 py-4 rounded-2xl mb-6 flex items-center gap-3">
-                        <i class="fa fa-check-circle"></i>
-                        <strong>Claim updated successfully!</strong>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                    
-                        <div class="space-y-8">
+                    <div class="mb-4">
+                        <a href="/my/service-center/claims" class="text-decoration-none text-dark fw-bold d-inline-flex align-items-center gap-2" style="color: #212529 !important;">
+                            <i class="fa fa-arrow-left small"></i>
+                            <span>Back to Claims Dashboard</span>
+                        </a>
+                    </div>
 
-                        
-                            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 text-white">
-                                    <h3 class="text-2xl font-bold flex items-center gap-3">
-                                        <i class="fa fa-info-circle"></i>
-                                        Claim Information
-                                    </h3>
-                                    <p class="text-blue-100 mt-1 text-lg font-semibold" t-out="claim.name"></p>
+                    <div t-if="error == 'missing_reason'" class="alert alert-danger border-0 shadow-sm d-flex align-items-center gap-3 rounded-3 mb-4" role="alert">
+                        <i class="fa fa-exclamation-triangle text-danger fs-5"></i>
+                        <span class="fw-medium">Rejection reason is required! Please fulfill all details.</span>
+                    </div>
+                    
+                    <div t-if="success" class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-3 rounded-3 mb-4" role="alert">
+                        <i class="fa fa-check-circle text-success fs-5"></i>
+                        <span class="fw-medium">Claim logs and database metrics updated successfully!</span>
+                    </div>
+
+                    <div class="row g-4 align-items-start">
+                
+                        <div class="col-12 col-lg-6 d-flex flex-column gap-4">
+
+                          
+                            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                                <div class="card-header bg-white border-bottom py-3 px-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 bg-secondary bg-opacity-25 rounded text-info">
+                                            <i class="fa fa-info-circle fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-uppercase tracking-wider text-muted fw-bold d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">Service Record</small>
+                                            <h5 class="card-title mb-0 fw-bold text-dark" t-out="claim.name"></h5>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <div class="p-8 space-y-6">
-                                    <div class="grid grid-cols-2 gap-6">
-                                        <div>
-                                            <p class="text-xs font-semibold tracking-widest text-gray-500 mb-1">CUSTOMER</p>
-                                            <p class="font-semibold text-gray-800 text-lg" t-out="claim.registration_id.customer_name"></p>
+                                <div class="card-body p-4">
+                                    <div class="row g-3 border-b pb-3 mb-3">
+                                        <div class="col-6">
+                                            <small class="text-uppercase text-muted fw-bold d-block mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Customer / Client</small>
+                                            <p class="fw-semibold text-dark mb-0" t-out="claim.registration_id.customer_name"></p>
                                         </div>
-                                        <div>
-                                            <p class="text-xs font-semibold tracking-widest text-gray-500 mb-1">SERIAL NO</p>
-                                            <p class="font-bold text-emerald-600 text-lg" t-out="claim.registration_id.serial_no.name"></p>
+                                        <div class="col-6">
+                                            <small class="text-uppercase text-muted fw-bold d-block mb-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">Product Serial Number</small>
+                                            <p class="font-monospace fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                                <span class="badge bg-success p-1 rounded-circle" style="width: 6px; height: 6px; p-0: !important;"></span>
+                                                <span t-out="claim.registration_id.serial_no.name"></span>
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <p class="text-xs font-semibold tracking-widest text-gray-500 mb-1">ISSUE SUMMARY</p>
-                                        <p class="text-gray-600 leading-relaxed" t-out="claim.description"></p>
+                                    <div class="border-b pb-3 mb-3">
+                                        <small class="text-uppercase text-muted fw-bold d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.05em;">Issue Summary / Description</small>
+                                        <div class="bg-light rounded p-3 text-secondary border small lh-base" t-out="claim.description"></div>
                                     </div>
 
                                     <div>
-                                        <p class="text-xs font-semibold tracking-widest text-gray-500 mb-2">WARRANTY STATUS</p>
-                                        <span t-attf-class="inline-flex items-center px-5 py-2 rounded-2xl text-sm font-semibold
-                                            #{claim.is_covered and 'bg-emerald-100 text-emerald-700' or 'bg-rose-100 text-rose-700'}"
-                                            t-out="claim.is_covered and 'Covered Under Warranty' or 'Chargeable Service'">
+                                        <small class="text-uppercase text-muted fw-bold d-block mb-2" style="font-size: 0.7rem; letter-spacing: 0.05em;">Coverage Evaluation</small>
+                                        <span t-attf-class="badge text-uppercase tracking-wider px-3 py-2 rounded
+                                            #{claim.is_covered and 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' or 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25'}"
+                                            t-out="claim.is_covered and '✓ Covered Under Warranty' or '⚠ Chargeable Service'">
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-            
-                            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-                                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 text-white">
-                                    <h3 class="text-2xl font-bold flex items-center gap-3">
-                                        <i class="fa fa-stethoscope"></i>
-                                        Live Diagnosis &amp; Inspection
-                                    </h3>
+                           
+                            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                                <div class="card-header bg-white border-bottom py-3 px-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 bg-secondary bg-opacity-25 rounded text-primary">
+                                            <i class="fa fa-stethoscope fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title mb-0 fw-bold text-dark">Live Diagnosis &amp; Inspection</h5>
+                                            <small class="text-muted d-block small mt-0.5">Log technical telemetry and system evaluation parameters</small>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <div class="p-8">
+                                <div class="card-body p-4">
                                     <form action="/my/service-center/claim/update_inspection" method="post">
                                         <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                         <input type="hidden" name="claim_id" t-att-value="claim.id"/>
 
-                                        <div class="mb-6">
-                                            <label class="block text-sm font-semibold text-gray-600 mb-2">Diagnosis Report</label>
+                                        <div class="mb-4">
+                                            <label class="form-label text-uppercase text-muted fw-bold small mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Technical Diagnosis Report</label>
                                             <textarea name="diagnosis" rows="5"
-                                                class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 p-5 text-gray-700"
-                                                placeholder="Write detailed inspection findings here..."
-                                                required="1">
-                                                <t t-out="claim.diagnosis"/>
-                                            </textarea>
+                                                class="form-control rounded-3 p-3 text-dark small"
+                                                placeholder="Enter hardware fault, internal logs, and bench test parameters..."
+                                                required="1"><t t-out="claim.diagnosis"/></textarea>
                                         </div>
 
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-600 mb-2">Inspection Result</label>
-                                                <select name="inspection_result" 
-                                                    class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 p-4">
-                                                    <option value="passed" t-att-selected="claim.inspection_result == 'passed'">✅ Passed / Repairable</option>
-                                                    <option value="failed" t-att-selected="claim.inspection_result == 'failed'">❌ Failed Criteria</option>
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label text-uppercase text-muted fw-bold small mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Inspection Metric</label>
+                                                <select name="inspection_result" class="form-select rounded-3 p-3 text-dark fw-medium">
+                                                    <option value="passed" t-att-selected="claim.inspection_result == 'passed'">Passed / Repairable</option>
+                                                    <option value="failed" t-att-selected="claim.inspection_result == 'failed'">Failed Criteria / Void</option>
                                                 </select>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm font-semibold text-gray-600 mb-2">Warranty Coverage</label>
-                                                <select name="is_covered" 
-                                                    class="w-full rounded-2xl border border-gray-200 focus:border-blue-500 p-4">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label text-uppercase text-muted fw-bold small mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Warranty Claim Status</label>
+                                                <select name="is_covered" class="form-select rounded-3 p-3 text-dark fw-medium">
                                                     <option value="1" t-att-selected="claim.is_covered">Yes, Free Repair</option>
-                                                    <option value="0" t-att-selected="not claim.is_covered">No, Chargeable</option>
+                                                    <option value="0" t-att-selected="not claim.is_covered">No, Billable / Chargeable</option>
                                                 </select>
                                             </div>
                                         </div>
 
-                                        <button type="submit"
-                                            class="mt-8 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-2xl text-lg shadow-lg transition-all active:scale-95">
-                                            <i class="fa fa-save mr-2"></i>
-                                            Save Diagnosis Logs
+                                        <button type="submit" class="btn btn-primary btn-lg w-100 rounded-3 text-white fw-semibold py-3 d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
+                                            <i class="fa fa-save small opacity-75"></i>
+                                            <span>Commit &amp; Save Diagnosis Logs</span>
                                         </button>
                                     </form>
                                 </div>
                             </div>
                         </div>
 
-        
-                        <div class="bg-white rounded-3xl shadow-xl overflow-hidden" 
-                            t-if="claim.state in ['inspection', 'repair', 'submitted']">
-                            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 text-white">
-                                <h3 class="text-2xl font-bold flex items-center gap-3">
-                                    <i class="fa fa-tools"></i>
-                                    Repair Worksheet
-                                </h3>
-                            </div>
-                            
-                            <div class="p-8">
-                                <t t-if="claim.part_ids or claim.labor_ids">
-                                    <div class="mb-8">
-                                        <h5 class="font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                                            <i class="fa fa-list"></i> Current Items
-                                        </h5>
-                                        <div class="space-y-3">
-                                            <t t-foreach="claim.part_ids" t-as="p_line">
-                                                <div class="flex items-center justify-between bg-gray-50 px-5 py-4 rounded-2xl">
-                                                    <div class="flex items-center gap-3">
-                                                        <i class="fa fa-cube text-blue-500"></i>
-                                                        <span t-out="p_line.product_id.name"/>
-                                                    </div>
-                                                    <span class="font-bold text-blue-600">× <t t-out="p_line.quantity"/></span>
-                                                </div>
-                                            </t>
-                                            <t t-foreach="claim.labor_ids" t-as="l_line">
-                                                <div class="flex items-center justify-between bg-gray-50 px-5 py-4 rounded-2xl">
-                                                    <div class="flex items-center gap-3">
-                                                        <i class="fa fa-wrench text-amber-500"></i>
-                                                        <span t-out="l_line.description"/>
-                                                    </div>
-                                                    <span class="font-bold text-amber-600"><t t-out="l_line.labor_cost"/> BDT</span>
-                                                </div>
-                                            </t>
+                      
+                        <div class="col-12 col-lg-6" t-if="claim.state in ['inspection', 'repair', 'submitted']">
+                            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                                <div class="card-header bg-white border-bottom py-3 px-4">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="p-2 bg-secondary bg-opacity-25 rounded text-success">
+                                            <i class="fa fa-tools fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title mb-0 fw-bold text-dark">Repair Worksheet &amp; Allocations</h5>
+                                            <small class="text-muted d-block small mt-0.5">Manage spare parts, material log pipelines and cost distribution</small>
                                         </div>
                                     </div>
-                                </t>
+                                </div>
+                                
+                                <div class="card-body p-4">
+                                    <t t-if="claim.part_ids or claim.labor_ids">
+                                        <div class="mb-4">
+                                            <h6 class="text-uppercase text-muted fw-bold mb-3 d-flex align-items-center gap-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                                                <i class="fa fa-list"></i> Allocated Parts &amp; Tasks
+                                            </h6>
+                                            <div class="d-flex flex-column gap-2 overflow-auto pr-1" style="max-h: 240px;">
+                                                <t t-foreach="claim.part_ids" t-as="p_line">
+                                                    <div class="d-flex align-items-center justify-content-between bg-light px-3 py-2 border rounded-3 transition">
+                                                        <div class="d-flex align-items-center gap-2 text-dark small fw-medium">
+                                                            <i class="fa fa-cube text-primary small"></i>
+                                                            <span t-out="p_line.product_id.name"/>
+                                                        </div>
+                                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1.5 rounded">Qty: <t t-out="p_line.quantity"/></span>
+                                                    </div>
+                                                </t>
+                                                <t t-foreach="claim.labor_ids" t-as="l_line">
+                                                    <div class="d-flex align-items-center justify-content-between bg-light px-3 py-2 border rounded-3 transition">
+                                                        <div class="d-flex align-items-center gap-2 text-dark small fw-medium">
+                                                            <i class="fa fa-wrench text-warning small"></i>
+                                                            <span t-out="l_line.description"/>
+                                                        </div>
+                                                        <span class="font-monospace fw-bold text-dark small"><t t-out="l_line.labor_cost"/> BDT</span>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
 
-                                <form action="/my/service-center/claim/add_lines" method="post" id="repair_worksheet_form">
-                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <input type="hidden" name="claim_id" t-att-value="claim.id"/>
+                                    <form action="/my/service-center/claim/add_lines" method="post" id="repair_worksheet_form">
+                                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                        <input type="hidden" name="claim_id" t-att-value="claim.id"/>
 
-                                    <h5 class="font-semibold text-gray-700 mb-4">Add Used Parts / Materials</h5>
-                                    
-                                    <table class="w-full" id="parts_table">
-                                        <thead>
-                                            <tr class="border-b">
-                                                <th class="text-left py-3 font-medium text-gray-600">Product Part</th>
-                                                <th class="text-center py-3 font-medium text-gray-600 w-28">Qty</th>
-                                                <th class="w-12"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="divide-y"></tbody>
-                                    </table>
+                                        <div class="border-top pt-4 mb-4">
+                                            <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 0.05em;">Add Spare Parts / Bill of Materials</h6>
+                                            
+                                            <div class="table-responsive">
+                                                <table class="table table-borderless align-middle small mb-0" id="parts_table">
+                                                    <thead>
+                                                        <tr class="border-bottom text-muted">
+                                                            <th class="pb-2 text-uppercase fw-bold" style="font-size: 0.7 zero; letter-spacing: 0.05em;">Product Item Variant</th>
+                                                            <th class="pb-2 text-center text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em; width: 100px;">Quantity</th>
+                                                            <th class="pb-2" style="width: 40px;"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Dynamic components appended seamlessly here -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
 
-                                    <button type="button" id="add_part_row_btn"
-                                        class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all">
-                                        <i class="fa fa-plus"></i>
-                                        Add Another Part
-                                    </button>
-                                </form>
+                                        <button type="button" id="add_part_row_btn" class="btn btn-outline-secondary w-100 py-2.5 rounded-3 d-flex align-items-center justify-content-center gap-2 small fw-semibold shadow-sm">
+                                            <i class="fa fa-plus small text-muted"></i>
+                                            <span>Add Inventory Part Line</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -516,6 +536,7 @@
 
         </t>
     </template>
+
 
     <template id="registration_success_page" name="Warranty Registration Success">
         <t t-call="website.layout">
