@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_production_lot_form_inherit_warranty" model="ir.ui.view">
+        <field name="name">stock.lot.form.inherit.warranty</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//group[@name='main_group']" position="after">
+                
+                <field name="has_warranty_policy" invisible="1"/>
+                
+                <group string="WARRANTY DETAILS" name="warranty_details_group" invisible="not has_warranty_policy">
+                  
+                    <group>
+                        <field name="live_warranty_status" readonly="1" widget="badge" 
+                               decoration-info="live_warranty_status == 'pending'"
+                               decoration-success="live_warranty_status == 'approved'"
+                               decoration-warning="live_warranty_status == 'not_found'"
+                               decoration-danger="live_warranty_status in ('expired', 'rejected')"/>
+
+                        <field name="qr_token" readonly="1" string="Reference QR Token"/>
+
+                        <field name="public_url" 
+                               widget="url" 
+                               readonly="1" 
+                               string="URL" 
+                               invisible="not public_url"/>
+                    </group>
+
+                </group>
+
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

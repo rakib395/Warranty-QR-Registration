@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_warranty_claim_reject_wizard_form" model="ir.ui.view">
+        <field name="name">warranty.claim.reject.wizard.form</field>
+        <field name="model">warranty.claim.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Warranty Claim">
+                <group>
+                    <field name="rejection_reason" placeholder="Please enter the mandatory rejection reason here..."/>
+                </group>
+                <footer>
+                    <button string="Confirm Reject" name="action_reject_claim" type="object" class="btn-danger"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_claim_reject_wizard" model="ir.actions.act_window">
+        <field name="name">Reject Claim Reason</field>
+        <field name="res_model">warranty.claim.reject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_warranty_claim_assign_wizard_form" model="ir.ui.view">
+        <field name="name">warranty.claim.assign.wizard.form</field>
+        <field name="model">warranty.claim.assign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assign Warranty Claim to Service Center">
+                <group>
+                    <group>
+                        <field name="service_center_id" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="technician_id" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button string="Assign &amp; Set SLA" name="action_assign_claim" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_warranty_claim_assign_wizard" model="ir.actions.act_window">
+        <field name="name">Assign Claim</field>
+        <field name="res_model">warranty.claim.assign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_ms_warranty_claim_list" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.list</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <list string="Warranty Claims">
+                <field name="name"/>
+                <field name="registration_id"/>
+                 <field name="issue_category"/>
+                <field name="resolution_type" widget="badge"/>
+                <field name="fraud_risk_level" widget="badge" decoration-danger="fraud_risk_level == 'high'" decoration-warning="fraud_risk_level == 'medium'" decoration-success="fraud_risk_level == 'low'"/>
+                <field name="customer_mobile"/>
+                <field name="customer_email"/>
+                <field name="create_date" string="Submitted On"/>
+                <field name="state"
+                       widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'under_review'"
+                       decoration-success="state in ('approved','resolved')"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_form" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.form</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <form string="Warranty Claim">
+
+               <header>
+                    <button name="action_receive_product" string="Receive Product" type="object" 
+                            class="oe_highlight" invisible="state != 'submitted'"/>
+                            
+                    <button name="action_reject_submitted_claim" string="Reject Product (Direct)" type="object" 
+                            class="btn-danger" invisible="state != 'submitted'"/>
+                            
+                    <button name="action_start_review" string="Start Technical Review" type="object" 
+                            class="oe_highlight" invisible="state != 'received'"/>
+                            
+                    <button name="%(action_warranty_claim_assign_wizard)d" string="Assign to Center" type="action" 
+                            class="oe_highlight btn-info" invisible="state != 'under_review'"/>
+                            
+                    <button name="action_approve" string="Approve Claim" type="object" 
+                            class="oe_highlight btn-success" invisible="state != 'under_review'"/>
+                            
+                    <button name="%(action_warranty_claim_reject_wizard)d" string="Reject Claim (Review)" type="action" 
+                            class="btn-danger" invisible="state != 'under_review'"/>
+                            
+                    <button name="action_repair" string="Start Repair Workflow" type="object" 
+                            class="oe_highlight btn-primary" invisible="state != 'approved' or resolution_type != 'repair'"/>
+                            
+                    <button name="action_convert_to_chargeable" string="Convert to Chargeable" type="object" 
+                            class="oe_highlight btn-dark" invisible="state != 'approved' or resolution_type != 'repair' or is_chargeable == False"/>
+                            
+                    <button name="action_resolved" string="Mark Resolved (Replacement)" type="object" 
+                            class="oe_highlight btn-info" invisible="state != 'approved' or resolution_type != 'replacement'"/>
+                            
+                    <button name="action_approve_refund" string="Mark Resolved (Refund)" type="object" 
+                            class="oe_highlight btn-warning" invisible="state != 'approved' or resolution_type != 'refund'"/>
+                            
+                    <button name="action_resolved" string="Mark as Resolved (Repaired)" type="object" 
+                            class="oe_highlight btn-success" invisible="state != 'repairing' or resolution_type != 'repair'"/>
+                            
+                    <button name="action_mark_delivered" string="Mark as Delivered" type="object" 
+                            class="oe_highlight btn-success" invisible="state != 'resolved'"/>
+                            
+                    <button name="action_reset_to_review" string="Reset to Review" type="object" 
+                            class="btn-secondary" invisible="state not in ('rejected', 'resolved', 'delivered')"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="submitted,received,under_review,approved,repairing,resolved,delivered"/>
+                </header>
+
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_linked_invoices" type="object" class="oe_stat_button" icon="fa-pencil-square-o" invisible="invoice_count == 0">
+                            <field name="invoice_count" widget="statinfo" string="Invoices/Bills"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                            <span class="badge rounded-pill bg-danger" style="font-size: 14px; margin-left: 10px;" invisible="not is_chargeable">Chargeable Paid Service</span>
+                            
+                            <span class="badge rounded-pill bg-warning text-dark" style="font-size: 14px; margin-left: 5px;" invisible="not is_suspect_duplicate or fraud_risk_level != 'medium'">Medium Fraud Risk</span>
+                            <span class="badge rounded-pill bg-danger" style="font-size: 14px; margin-left: 5px;" invisible="not is_suspect_duplicate or fraud_risk_level != 'high'">High Fraud Risk</span>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Claim Information">
+                            <field name="registration_id" readonly="state == 'resolved'"/>
+                            <field name="customer_name" readonly="1" force_save="1" options="{'no_open': True}"/>
+                            <field name="product_id" readonly="1" force_save="1" options="{'no_open': True}"/>
+                            <field name="issue_category" readonly="state == 'resolved'"/>
+                            <field name="customer_mobile" readonly="state == 'resolved'"/>
+                            <field name="customer_email" readonly="state == 'resolved'"/>
+                            <field name="resolution_type" widget="radio" options="{'horizontal': true}" readonly="state == 'resolved'"/>
+                            <field name="is_chargeable" widget="boolean_toggle" readonly="state == 'resolved'" invisible="resolution_type != 'repair'"/>
+                        </group>
+
+                        <group string="Assignment &amp; Deadlines">
+                            <field name="create_date" readonly="1" string="Submitted On"/>
+                            <field name="service_center_id" readonly="1" invisible="not service_center_id"/>
+                            <field name="technician_id" readonly="1" invisible="not technician_id"/>
+                            <field name="sla_deadline" readonly="1" invisible="not sla_deadline"/>
+                            <field name="is_suspect_duplicate" invisible="1"/>
+                            <field name="fraud_risk_level" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Logistics &amp; Delivery Tracking">
+                        <group>
+                            <field name="delivery_method" readonly="state == 'resolved'"/>
+                            <field name="courier_service_id" 
+                                options="{'no_create': True, 'no_open': False}" 
+                                invisible="delivery_method != 'courier'" 
+                                required="delivery_method == 'courier'"
+                                readonly="state == 'resolved'"/>
+                        </group>
+                        <group>
+                            <field name="received_by_id" invisible="not received_by_id" options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                        
+                        <group>
+                            <field name="courier_tracking_no" 
+                                invisible="delivery_method != 'courier'" 
+                                required="delivery_method == 'courier'"
+                                readonly="state == 'resolved'"/>
+                            <field name="customer_location" 
+                                invisible="delivery_method != 'courier'" 
+                                required="delivery_method == 'courier'" 
+                                readonly="state == 'resolved'"/>
+                        </group>
+                    </group>
+
+                    <group string="Paid Service Matrix" invisible="not is_chargeable">
+                        <group>
+                            <field name="estimated_charge_amount" 
+                                required="is_chargeable" 
+                                readonly="state == 'resolved'"
+                                placeholder="Amount..."
+                                options="{'type': 'number'}"/>
+                                
+                            <field name="charge_payment_method" 
+                                required="is_chargeable" 
+                                readonly="state == 'resolved'"/>
+                        </group>
+                        <group>
+                            <field name="charge_reason" 
+                                placeholder="e.g., Device out of warranty scope or has physical liquid damage..." 
+                                required="is_chargeable" 
+                                readonly="state == 'resolved'"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Fault Description">
+                            <field name="description" placeholder="Customer issue description..." readonly="state == 'resolved'"/>
+                        </page>
+
+                        <page string="Resolution Management" invisible="state in ('submitted', 'under_review', 'rejected')">
+                            <div invisible="resolution_type != 'repair'">
+                                <group>
+                                    <field name="diagnosis" placeholder="Describe the found hardware/software fault..." required="state == 'approved' and resolution_type == 'repair'" readonly="state == 'resolved'"/>
+                                    <field name="repair_notes" placeholder="Describe the actions taken to fix the product..." required="state == 'approved' and resolution_type == 'repair'" readonly="state == 'resolved'"/>
+                                </group>
+                                
+                                <separator string="Parts Replacement Breakdown"/>
+                                <field name="part_lines" readonly="state == 'resolved'">
+                                    <list editable="bottom">
+                                        <field name="product_id" options="{'no_create': True}"/>
+                                        <field name="quantity"/>
+                                        <field name="price_unit"/>
+                                        <field name="warranty_covered" widget="boolean_toggle"/>
+                                        <field name="subtotal" sum="Total Parts Cost"/>
+                                    </list>
+                                </field>
+
+                                <separator string="Labor &amp; Service Charges"/>
+                                <field name="labor_lines" readonly="state == 'resolved'">
+                                    <list editable="bottom">
+                                        <field name="description" placeholder="e.g., Motherboard Soldering"/>
+                                        <field name="hours"/>
+                                        <field name="hourly_rate"/>
+                                        <field name="warranty_covered" widget="boolean_toggle"/>
+                                        <field name="subtotal" sum="Total Labor Cost"/>
+                                    </list>
+                                </field>
+                            </div>
+
+                            <div invisible="resolution_type != 'replacement'">
+                               <group string="Product Replacement Mapping">
+                                    <field name="old_serial_no" readonly="1" force_save="1"/>
+                                    
+                                    <field name="replacement_product_id" 
+                                        options="{'no_create': True}" 
+                                        required="state == 'approved' and resolution_type == 'replacement'" 
+                                        readonly="state == 'resolved'"/>
+                                    
+                                    <field name="replacement_serial_no" 
+                                        options="{'no_create': True, 'no_open': True}" 
+                                        required="state == 'approved' and resolution_type == 'replacement'" 
+                                        readonly="state == 'resolved'"
+                                        domain="[('product_id', '=', replacement_product_id)]"
+                                        context="{'default_product_id': replacement_product_id}"/>
+                                </group>
+                                <div class="alert alert-info" role="alert" style="margin-top: 15px;">
+                                    <strong>Warranty Carry-Forward Policy Applied:</strong> 
+                                    Approving this action will automatically expire the old serial configuration and transfer the remaining warranty duration to the newly provisioned serial number.
+                                </div>
+                            </div>
+
+                            <div invisible="resolution_type != 'refund'">
+                                <group string="Finance Liquidation Details">
+                                    <field name="refund_amount" placeholder="0.00" required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
+                                    <field name="refund_reason" placeholder="State reason why repair/replacement isn't feasible (e.g., Out of Stock)..." required="state == 'approved' and resolution_type == 'refund'" readonly="state == 'resolved'"/>
+                                </group>
+                            </div>
+                        </page>
+
+                        <page string="Attachments / Proofs">
+                            <group>
+                                <field name="product_photo" widget="image" class="oe_avatar" options="{'size': [200, 200]}" readonly="state == 'resolved'"/>
+                                <field name="invoice_proof" widget="binary" readonly="state == 'resolved'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_graph" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.graph</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <graph string="Warranty Claims Analytics" sample="1">
+                <field name="product_id"/>
+                <field name="total_claim_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_pivot" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.pivot</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <pivot string="Warranty Claims Matrix" sample="1">
+                <field name="product_id" type="row"/>
+                <field name="issue_category" type="col"/>
+                <field name="total_claim_cost" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_ms_warranty_claim_search_inherit" model="ir.ui.view">
+        <field name="name">ms.warranty.claim.search</field>
+        <field name="model">ms.warranty.claim</field>
+        <field name="arch" type="xml">
+            <search string="Search Claims">
+                <field name="name"/>
+                <field name="registration_id"/>
+                <field name="product_id"/>
+                <field name="dealer_id"/>
+                <field name="service_center_id"/>
+                
+                <filter string="Submitted" name="state_submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter string="Under Review" name="state_review" domain="[('state', '=', 'under_review')]"/>
+                <filter string="Approved" name="state_approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Resolved" name="state_resolved" domain="[('state', '=', 'resolved')]"/>
+                
+                <group>
+                    <filter string="Product" name="group_by_product" context="{'group_by': 'product_id'}"/>
+                    <filter string="Issue Category" name="group_by_issue" context="{'group_by': 'issue_category'}"/>
+                    <filter string="Dealer/Store" name="group_by_dealer" context="{'group_by': 'dealer_id'}"/>
+                    <filter string="Service Center" name="group_by_center" context="{'group_by': 'service_center_id'}"/>
+                    <filter string="Resolution Type" name="group_by_resolution" context="{'group_by': 'resolution_type'}"/>
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+   <record id="action_ms_warranty_claim" model="ir.actions.act_window">
+        <field name="name">Warranty Claims</field>
+        <field name="res_model">ms.warranty.claim</field>
+        <field name="view_mode">list,form,graph,pivot</field>
+        <field name="search_view_id" ref="view_ms_warranty_claim_search_inherit"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No warranty claims found!
+            </p>
+            <p>
+                Claims submitted from the public portal will appear here.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_ms_warranty_claim_analytics" model="ir.actions.act_window">
+        <field name="name">Warranty Analytics</field>
+        <field name="res_model">ms.warranty.claim</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_group_by_product': 1}</field>
+    </record>
+
+</odoo>

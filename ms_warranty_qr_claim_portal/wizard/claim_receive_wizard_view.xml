@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_claim_receive_wizard_form" model="ir.ui.view">
+        <field name="name">claim.receive.wizard.form</field>
+        <field name="model">claim.receive.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Receive Product">
+                <sheet>
+                    <group>
+                        <field name="claim_id" invisible="1"/>
+                        <field name="received_by_id" options="{'no_open': True, 'no_create': True}"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button string="Confirm Receive" name="action_confirm_receive" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

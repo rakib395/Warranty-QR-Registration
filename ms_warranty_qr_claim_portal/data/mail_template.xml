@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="email_template_warranty_claim_submitted" model="mail.template">
+        <field name="name">Warranty Claim: Submitted Notification</field>
+        <field name="model_id" ref="ms_warranty_qr_claim_portal.model_ms_warranty_claim"/>
+        <field name="subject">Warranty Claim Received: {{ object.name }}</field>
+        <field name="email_from">{{ user.company_id.email_formatted or user.email_formatted }}</field>
+        <field name="email_to">{{ object.registration_id.customer_email or object.partner_id.email_formatted }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333333; max-width: 600px; margin: auto; border: 1px solid #e1e1e1; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #00A09D; margin: 0;">Warranty Claim Submitted</h2>
+                </div>
+                <p>Dear {{ object.registration_id.customer_name or object.partner_id.name }},</p>
+                <p>Thank you for reaching out to us. Your warranty claim request has been successfully created in our system.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; width: 40%; border-bottom: 1px solid #eeeeee;">Claim Number:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ object.name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eeeeee;">Product:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ object.product_id.name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eeeeee;">Serial Number:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ object.old_serial_no or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eeeeee;">Issue Category:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ dict(object._fields['issue_category'].selection).get(object.issue_category) }}</td>
+                    </tr>
+                </table>
+                
+                <p>Our technical support team is currently reviewing your ticket. You can track the progress anytime through our customer portal.</p>
+                <p style="margin-top: 30px;">Best Regards,<br/><strong>Mindsynth Support Team</strong></p>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_warranty_claim_approved" model="mail.template">
+        <field name="name">Warranty Claim: Approved Notification</field>
+        <field name="model_id" ref="ms_warranty_qr_claim_portal.model_ms_warranty_claim"/>
+        <field name="subject">Warranty Claim Approved: {{ object.name }}</field>
+        <field name="email_from">{{ user.company_id.email_formatted or user.email_formatted }}</field>
+        <field name="email_to">{{ object.registration_id.customer_email or object.partner_id.email_formatted }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333333; max-width: 600px; margin: auto; border: 1px solid #e1e1e1; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #28a745; margin: 0;">Claim Approved 🎉</h2>
+                </div>
+                <p>Dear {{ object.registration_id.customer_name or object.partner_id.name }},</p>
+                <p>Great news! Your warranty claim <strong>{{ object.name }}</strong> has been evaluated and officially <strong>Approved</strong> under policy coverage.</p>
+                
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+                    <strong>Next Steps:</strong> Our assigned service team/technician will process the fulfillment (Repair/Replacement/Refund) based on your dynamic policy framework.
+                </div>
+
+                <p>If your product is at our service center, our technicians will update you as soon as the service action completes.</p>
+                <p style="margin-top: 30px;">Best Regards,<br/><strong>Mindsynth Service Operations</strong></p>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_warranty_claim_rejected" model="mail.template">
+        <field name="name">Warranty Claim: Rejected Notification</field>
+        <field name="model_id" ref="ms_warranty_qr_claim_portal.model_ms_warranty_claim"/>
+        <field name="subject">Warranty Claim Update: {{ object.name }}</field>
+        <field name="email_from">{{ user.company_id.email_formatted or user.email_formatted }}</field>
+        <field name="email_to">{{ object.registration_id.customer_email or object.partner_id.email_formatted }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333333; max-width: 600px; margin: auto; border: 1px solid #e1e1e1; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #dc3545; margin: 0;">Claim Update</h2>
+                </div>
+                <p>Dear {{ object.registration_id.customer_name or object.partner_id.name }},</p>
+                <p>We are writing to inform you regarding the technical review of your warranty claim <strong>{{ object.name }}</strong>.</p>
+                
+                <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc3545; color: #856404;">
+                    <strong>Reason for Rejection:</strong><br/>
+                    {{ object.rejection_reason or 'The issue reported does not meet the specified warranty policy coverage criteria.' }}
+                </div>
+
+                <p>If you believe there has been an error or if you have additional supporting documents (like extended protection info), please reply directly to this mail or reach out to our service desk.</p>
+                <p style="margin-top: 30px;">Best Regards,<br/><strong>Mindsynth Support Team</strong></p>
+            </div>
+        </field>
+    </record>
+
+    <record id="email_template_warranty_claim_resolved" model="mail.template">
+        <field name="name">Warranty Claim: Resolved Confirmation</field>
+        <field name="model_id" ref="ms_warranty_qr_claim_portal.model_ms_warranty_claim"/>
+        <field name="subject">Warranty Claim Resolved: {{ object.name }}</field>
+        <field name="email_from">{{ user.company_id.email_formatted or user.email_formatted }}</field>
+        <field name="email_to">{{ object.registration_id.customer_email or object.partner_id.email_formatted }}</field>
+        <field name="body_html" type="html">
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #333333; max-width: 600px; margin: auto; border: 1px solid #e1e1e1; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #00A09D; margin: 0;">Service Completed</h2>
+                </div>
+                <p>Dear {{ object.registration_id.customer_name or object.partner_id.name }},</p>
+                <p>Your warranty claim <strong>{{ object.name }}</strong> has been successfully <strong>Resolved</strong> and closed.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; font-weight: bold; width: 40%; border-bottom: 1px solid #eeeeee;">Resolution Type:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee; text-transform: capitalize;">{{ object.resolution_type }}</td>
+                    </tr>
+                    <tr t-if="object.resolution_type == 'repair'">
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eeeeee;">Repair Notes:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ object.repair_notes or 'N/A' }}</td>
+                    </tr>
+                    <tr t-if="object.resolution_type == 'replacement'">
+                        <td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eeeeee;">New Serial Number:</td>
+                        <td style="padding: 8px; border-bottom: 1px solid #eeeeee;">{{ object.replacement_serial_no }}</td>
+                    </tr>
+                </table>
+
+                <p>We appreciate your patience throughout this workflow. Please feel free to rate your service center experience inside the portal.</p>
+                <p style="margin-top: 30px;">Best Regards,<br/><strong>Mindsynth Technologies</strong></p>
+            </div>
+        </field>
+    </record>
+
+</odoo>

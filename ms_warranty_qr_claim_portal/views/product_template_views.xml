@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="product_template_warranty_form_inherit" model="ir.ui.view">
+        <field name="name">product.template.warranty.form.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales']" position="after">
+                <page string="Warranty" name="warranty_settings">
+                    <group>
+                        <group string="Warranty Policy">
+                            <field name="has_warranty"/>
+                            <field name="warranty_policy_id" invisible="not has_warranty"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

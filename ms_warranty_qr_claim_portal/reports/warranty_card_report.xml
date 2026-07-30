@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_warranty_card" model="ir.actions.report">
+        <field name="name">Print Warranty Card</field>
+        <field name="model">stock.lot</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">ms_warranty_qr_claim_portal.report_warranty_card_template</field>
+        <field name="report_file">ms_warranty_qr_claim_portal.report_warranty_card_template</field>
+        <field name="binding_model_id" ref="stock.model_stock_lot"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_warranty_card_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.basic_layout">
+                    <div class="page" style="max-width:740px; margin:0 auto; font-family:Arial, Helvetica, sans-serif; padding:10px;">
+
+                        <div style="width:100%; margin-bottom:25px; min-height:80px;">
+                            <div style="float:left; width:65%; text-align:left;">
+                                <div style="font-size:26px; font-weight:bold; color:#16a34a; letter-spacing:0.5px; text-transform:uppercase; margin:0; padding:0; line-height:1.2;">
+                                    OFFICIAL WARRANTY CARD
+                                </div>
+                                <div style="font-size:12px; color:#6b7280; margin-top:6px; font-weight:500;">
+                                    Please keep this card and check your coverage details below.
+                                </div>
+                            </div>
+                            
+                            <div style="float:right; width:35%; padding-top:5px; text-align:right;">
+                                <img t-if="doc.company_id and doc.company_id.logo" t-att-src="image_data_uri(doc.company_id.logo)" style="max-height:55px; max-width:100%; object-fit:contain; display:inline-block;"/>
+                                <img t-elif="res_company and res_company.logo" t-att-src="image_data_uri(res_company.logo)" style="max-height:55px; max-width:100%; object-fit:contain; display:inline-block;"/>
+                            </div>
+                            <div style="clear:both;"></div>
+                        </div>
+
+                        <div style="
+                            border:1px solid #dbe3ea;
+                            border-top:6px solid #16a34a;
+                            border-radius:12px;
+                            padding:30px;
+                            background:#ffffff;
+                            color:#1f2937;
+                            box-shadow:0 4px 6px -1px rgba(0, 0, 0, 0.05);
+                        ">
+
+                            <t t-set="reg" t-value="doc.registration_id or doc.env['ms.warranty.registration'].sudo().search([('serial_no', '=', doc.id)], order='id desc', limit=1)"/>
+
+                            <table style="width:100%; border-collapse:collapse;">
+                                <tr>
+                                    <td style="width:70%; vertical-align:top; padding-right:25px;">
+                                        <table style="width:100%; border-collapse:collapse; border:1px solid #e5e7eb;">
+                                            <tr>
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; width:38%; font-size:13px; color:#4b5563;">Product</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; font-size:13px; color:#111827;"><t t-out="doc.product_id.name"/></td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#4b5563;">Serial Number</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; color:#dc2626; font-weight:bold; font-size:13px; letter-spacing:0.5px;">
+                                                    <t t-out="doc.name"/>
+                                                </td>
+                                            </tr>
+
+                                            <tr t-if="reg and reg.customer_name">
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#4b5563;">Customer Name</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; font-size:13px; color:#111827;"><t t-out="reg.customer_name"/></td>
+                                            </tr>
+
+                                            <tr t-if="reg and reg.purchase_date">
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#4b5563;">Purchase Date</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; font-size:13px; color:#111827;"><t t-out="reg.purchase_date" t-options='{"widget":"date"}'/></td>
+                                            </tr>
+
+                                            <tr t-if="reg and reg.expiry_date">
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#4b5563;">Warranty Valid Until</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#111827;"><t t-out="reg.expiry_date" t-options='{"widget":"date"}'/></td>
+                                            </tr>
+
+                                            <tr>
+                                                <td style="background:#f8fafc; border:1px solid #e5e7eb; padding:12px 16px; font-weight:bold; font-size:13px; color:#4b5563;">Coverage Status</td>
+                                                <td style="border:1px solid #e5e7eb; padding:12px 16px; color:#dc2626; font-weight:bold; font-size:13px; letter-spacing:0.5px;">
+                                                    <t t-if="doc.live_warranty_status == 'approved' or (reg and reg.state == 'approved')">
+                                                        <span style="background:#16a34a; color:#ffffff; padding:5px 14px; border-radius:4px; font-size:11px; font-weight:bold; display:inline-block; letter-spacing:0.5px;">ACTIVE</span>
+                                                    </t>
+                                                    <t t-elif="doc.live_warranty_status == 'pending' or (reg and reg.state == 'pending')">
+                                                        <span style="background:#eab308; color:#ffffff; padding:5px 14px; border-radius:4px; font-size:11px; font-weight:bold; display:inline-block; letter-spacing:0.5px;">PENDING</span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span style="background:#dc2626; color:#ffffff; padding:5px 14px; border-radius:4px; font-size:11px; font-weight:bold; display:inline-block; text-transform:uppercase; letter-spacing:0.5px;"><t t-out="doc.live_warranty_status or 'NOT REGISTERED'"/></span>
+                                                    </t>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    
+                                    <td style="width:30%; text-align:center; vertical-align:top;">
+                                        <div style="border:1px solid #e5e7eb; padding:18px; background:#ffffff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+                                            <div style="font-size:10px; font-weight:bold; color:#16a34a; margin-bottom:12px; letter-spacing:0.5px;">WARRANTY VERIFICATION</div>
+                                            <img t-att-src="'/report/barcode/?barcode_type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('QR', doc.public_url or ('/warranty/registration?serial_no=' + (doc.name or '')), 160, 160)" 
+                                                style="width:125px; height:125px; display:inline-block;"/>
+                                                
+                                            <div style="margin-top:12px; font-size:10px; color:#6b7280;">Scan To Verify Warranty</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div style="margin-top:30px; border-top:1px dashed #d1d5db; padding-top:15px; font-size:10px; color:#6b7280; text-align:center; line-height:1.6; font-style:italic;">
+                                This warranty card serves as proof of warranty coverage.
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

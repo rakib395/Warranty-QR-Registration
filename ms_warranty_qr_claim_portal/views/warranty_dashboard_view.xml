@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+      
+            <record id="view_ms_warranty_dashboard_form" model="ir.ui.view">
+                <field name="name">ms.warranty.dashboard.form</field>
+                <field name="model">ms.warranty.dashboard</field>
+                <field name="arch" type="xml">
+                    <form string="Warranty Dashboard" create="false" delete="false" edit="true">
+                        <div class="alert alert-info row m-0 p-3" role="alert" style="border-radius: 6px; border-left: 5px solid #00A09D; background-color: #f4fafb; color: #444;">
+                            <div class="d-flex align-items-center p-3 bg-white border-bottom">
+                                <i class="oi oi-apps text-primary fs-1"></i> 
+
+                                <div class="ms-3">
+                                    <h2 class="mb-1 fw-bold">Warranty Performance Dashboard</h2>
+                                    <p class="text-muted mb-0">Select a custom date range to dynamically update your performance tracking cards.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center justify-content-end row">
+                                <div class="col-sm-5 m-0 p-1">
+                                    <label for="date_from" class="font-weight-bold" style="font-size: 11px; text-transform: uppercase; color: #7f8c8d; display:block; margin-bottom:2px;">From Date</label>
+                                    <field name="date_from" class="form-control" style="border-radius: 4px;"/>
+                                </div>
+                                <div class="col-sm-5 m-0 p-1">
+                                    <label for="date_to" class="font-weight-bold" style="font-size: 11px; text-transform: uppercase; color: #7f8c8d; display:block; margin-bottom:2px;">To Date</label>
+                                    <field name="date_to" class="form-control" style="border-radius: 4px;"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="container-fluid py-3 px-0">
+                            <h5 class="text-uppercase tracking-wider font-weight-bold mb-3" style="color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px;">
+                                <i class="fa fa-line-chart text-muted mr-2"/> Core Warranty Metrics
+                            </h5>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-3 mb-3">
+                                    <div class="card shadow-sm text-center" style="border-radius: 8px; border: none; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; min-height: 140px;">
+                                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                                            <div>
+                                                <i class="fa fa-id-card-o fa-2x mb-2" style="opacity: 0.8;"/>
+                                                <p class="card-text text-uppercase m-0 font-weight-bold text-truncate" style="font-size: 12px; letter-spacing: 0.5px; opacity: 0.9;">Total Registrations</p>
+                                            </div>
+                                            <h1 class="card-title font-weight-bold m-0 my-1" style="font-size: 32px;"><field name="count_registration"/></h1>
+                                            <button name="action_view_registrations" type="object" class="btn btn-sm btn-link text-white font-weight-bold p-0 text-uppercase" style="font-size: 11px; text-decoration: none; opacity: 0.9;">
+                                                View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <div class="card shadow-sm text-center" style="border-radius: 8px; border: none; background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); color: white; min-height: 140px;">
+                                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                                            <div>
+                                                <i class="fa fa-envelope-o fa-2x mb-2" style="opacity: 0.8;"/>
+                                                <p class="card-text text-uppercase m-0 font-weight-bold text-truncate" style="font-size: 12px; letter-spacing: 0.5px; opacity: 0.9;">Submitted Claims</p>
+                                            </div>
+                                            <h1 class="card-title font-weight-bold m-0 my-1" style="font-size: 32px;"><field name="count_claim_submitted"/></h1>
+                                            <button name="action_view_submitted_claims" type="object" class="btn btn-sm btn-link text-white font-weight-bold p-0 text-uppercase" style="font-size: 11px; text-decoration: none; opacity: 0.9;">
+                                                View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <div class="card shadow-sm text-center" style="border-radius: 8px; border: none; background: linear-gradient(135deg, #f857a6 0%, #ff5858 100%); color: white; min-height: 140px;">
+                                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                                            <div>
+                                                <i class="fa fa-hourglass-half fa-2x mb-2" style="opacity: 0.8;"/>
+                                                <p class="card-text text-uppercase m-0 font-weight-bold text-truncate" style="font-size: 12px; letter-spacing: 0.5px; opacity: 0.9;">Unresolved Claims</p>
+                                            </div>
+                                            <h1 class="card-title font-weight-bold m-0 my-1" style="font-size: 32px;"><field name="count_claim_unresolved"/></h1>
+                                            <button name="action_view_unresolved_claims" type="object" class="btn btn-sm btn-link text-white font-weight-bold p-0 text-uppercase" style="font-size: 11px; text-decoration: none; opacity: 0.9;">
+                                                View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <div class="card shadow-sm text-center" style="border-radius: 8px; border: none; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; min-height: 140px;">
+                                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                                            <div>
+                                                <i class="fa fa-check-circle-o fa-2x mb-2" style="opacity: 0.8;"/>
+                                                <p class="card-text text-uppercase m-0 font-weight-bold text-truncate" style="font-size: 12px; letter-spacing: 0.5px; opacity: 0.9;">Resolved Claims</p>
+                                            </div>
+                                            <h1 class="card-title font-weight-bold m-0 my-1" style="font-size: 32px;"><field name="count_claim_resolved"/></h1>
+                                            <button name="action_view_resolved_claims" type="object" class="btn btn-sm btn-link text-white font-weight-bold p-0 text-uppercase" style="font-size: 11px; text-decoration: none; opacity: 0.9;">
+                                                View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="text-uppercase tracking-wider font-weight-bold mb-3" style="color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px;">
+                                <i class="fa fa-pie-chart text-muted mr-2"/> Resolved Resolution Breakdown
+                            </h5>
+                            
+                            <div class="row">
+                               
+                                <div class="col-md-4 mb-3">
+                                    <div class="card shadow-sm bg-white" style="border-radius: 6px; border-left: 5px solid #11998e;">
+                                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <h3 class="font-weight-bold m-0 text-dark" style="font-size: 26px;"><field name="count_res_repair"/></h3>
+                                                <p class="text-muted m-0 font-weight-bold" style="font-size: 12px;">Repaired Units</p>
+                                               
+                                                <button name="action_view_repair_details" type="object" class="btn btn-sm btn-link text-success font-weight-bold p-0 text-uppercase mt-2" style="font-size: 11px; text-decoration: none;">
+                                                    View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                                </button>
+                                            </div>
+                                            <div class="p-2 bg-light" style="border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fa fa-wrench text-success fa-lg"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                               
+                                <div class="col-md-4 mb-3">
+                                    <div class="card shadow-sm bg-white" style="border-radius: 6px; border-left: 5px solid #2575fc;">
+                                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <h3 class="font-weight-bold m-0 text-dark" style="font-size: 26px;"><field name="count_res_replacement"/></h3>
+                                                <p class="text-muted m-0 font-weight-bold" style="font-size: 12px;">Replacements Given</p>
+                                               
+                                                <button name="action_view_replacement_details" type="object" class="btn btn-sm btn-link text-primary font-weight-bold p-0 text-uppercase mt-2" style="font-size: 11px; text-decoration: none;">
+                                                    View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                                </button>
+                                            </div>
+                                            <div class="p-2 bg-light" style="border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fa fa-refresh text-primary fa-lg"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                               
+                                <div class="col-md-4 mb-3">
+                                    <div class="card shadow-sm bg-white" style="border-radius: 6px; border-left: 5px solid #e74c3c;">
+                                        <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <h3 class="font-weight-bold m-0 text-dark" style="font-size: 26px;"><field name="count_res_refund"/></h3>
+                                                <p class="text-muted m-0 font-weight-bold" style="font-size: 12px;">Refunds Processed</p>
+                                               
+                                                <button name="action_view_refund_details" type="object" class="btn btn-sm btn-link text-danger font-weight-bold p-0 text-uppercase mt-2" style="font-size: 11px; text-decoration: none;">
+                                                    View Details <i class="fa fa-arrow-circle-right ml-1"/>
+                                                </button>
+                                            </div>
+                                            <div class="p-2 bg-light" style="border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fa fa-money text-danger fa-lg"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </field>
+            </record>
+
+            <record id="action_ms_warranty_dashboard" model="ir.actions.act_window">
+                <field name="name">Warranty Dashboard</field>
+                <field name="res_model">ms.warranty.dashboard</field>
+                <field name="view_mode">form</field>
+                <field name="target">current</field>
+            </record>
+       
+</odoo>
